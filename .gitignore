@@ -31,7 +31,6 @@ coverage/
 .nyc_output/
 
 # Go specific
-go.sum
 *.mod.sum
 
 # IDE
