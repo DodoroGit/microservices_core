@@ -7,6 +7,16 @@ import (
 	"user-service/models"
 )
 
+// UserRepositoryInterface 定義 repository 層的契約，讓 service 層依賴 interface 而非具體實作
+type UserRepositoryInterface interface {
+	Create(user *models.User) error
+	FindByEmail(email string) (*models.User, error)
+	FindByID(id string) (*models.User, error)
+	FindAll() ([]models.User, error)
+	Update(id string, username string) error
+	Delete(id string) error
+}
+
 // UserRepository 用戶資料訪問層
 type UserRepository struct {
 	db *sql.DB

@@ -9,13 +9,23 @@ import (
 	"user-service/repository"
 )
 
+// UserServiceInterface 定義 service 層的契約，讓 handler 層依賴 interface 而非具體實作
+type UserServiceInterface interface {
+	Register(req models.RegisterRequest) (*models.User, error)
+	Login(req models.LoginRequest) (*models.User, error)
+	GetUsers() ([]models.User, error)
+	GetUserByID(id string) (*models.User, error)
+	UpdateUser(id string, req models.UpdateUserRequest) error
+	DeleteUser(id string) error
+}
+
 // UserService 用戶業務邏輯層
 type UserService struct {
-	repo *repository.UserRepository
+	repo repository.UserRepositoryInterface
 }
 
 // NewUserService 創建用戶 Service
-func NewUserService(repo *repository.UserRepository) *UserService {
+func NewUserService(repo repository.UserRepositoryInterface) *UserService {
 	return &UserService{repo: repo}
 }
 

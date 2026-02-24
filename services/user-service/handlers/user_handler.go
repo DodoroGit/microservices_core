@@ -10,11 +10,11 @@ import (
 
 // UserHandler 用戶 HTTP 處理層
 type UserHandler struct {
-	service *services.UserService
+	service services.UserServiceInterface
 }
 
 // NewUserHandler 創建用戶 Handler
-func NewUserHandler(service *services.UserService) *UserHandler {
+func NewUserHandler(service services.UserServiceInterface) *UserHandler {
 	return &UserHandler{service: service}
 }
 

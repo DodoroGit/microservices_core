@@ -35,7 +35,8 @@ go.sum
 *.mod.sum
 
 # IDE
-.vscode/
+.vscode/*
+!.vscode/settings.json
 .idea/
 *.swp
 *.swo
