@@ -73,258 +73,216 @@ func getEnvOrDefault(key, defaultValue string) string {
 	return defaultValue
 }
 
-// -------------------------------------------------------------------
+// ===================================================================
 // Create 測試
-// -------------------------------------------------------------------
+// ===================================================================
 
 func TestUserRepository_Create(t *testing.T) {
-	db := setupIntegrationDB(t)
-	repo := NewUserRepository(db)
+	t.Run("success", func(t *testing.T) {
+		db := setupIntegrationDB(t)
+		repo := NewUserRepository(db)
 
-	tests := []struct {
-		name        string
-		user        *models.User
-		expectError bool
-	}{
-		{
-			name: "success",
-			user: &models.User{
-				ID:       "11111111-1111-1111-1111-111111111111",
-				Email:    "create@integration.test",
-				Username: "createuser",
-				Password: "hashedpassword",
-			},
-			expectError: false,
-		},
-		{
-			name: "duplicate email",
-			user: &models.User{
-				ID:       "22222222-2222-2222-2222-222222222222",
-				Email:    "create@integration.test", // 同一個 email
-				Username: "anotheruser",
-				Password: "hashedpassword",
-			},
-			expectError: true,
-		},
-	}
+		user := &models.User{
+			ID:       "11111111-1111-1111-1111-111111111111",
+			Email:    "create@integration.test",
+			Username: "createuser",
+			Password: "hashedpassword",
+		}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			err := repo.Create(tt.user)
+		err := repo.Create(user)
 
-			if tt.expectError {
-				assert.Error(t, err)
-			} else {
-				assert.NoError(t, err)
-				// DB 有回填 created_at / updated_at
-				assert.False(t, tt.user.CreatedAt.IsZero(), "created_at should be set by DB")
-				assert.False(t, tt.user.UpdatedAt.IsZero(), "updated_at should be set by DB")
-			}
-		})
-	}
+		assert.NoError(t, err)
+		// DB 有回填 created_at / updated_at
+		assert.False(t, user.CreatedAt.IsZero(), "created_at should be set by DB")
+		assert.False(t, user.UpdatedAt.IsZero(), "updated_at should be set by DB")
+	})
+
+	t.Run("duplicate email", func(t *testing.T) {
+		db := setupIntegrationDB(t)
+		repo := NewUserRepository(db)
+
+		// 先建第一筆
+		first := &models.User{
+			ID:       "11111111-1111-1111-1111-111111111111",
+			Email:    "create@integration.test",
+			Username: "createuser",
+			Password: "hashedpassword",
+		}
+		require.NoError(t, repo.Create(first))
+
+		// 用同一個 email 再建一筆，應該要失敗
+		duplicate := &models.User{
+			ID:       "22222222-2222-2222-2222-222222222222",
+			Email:    "create@integration.test",
+			Username: "anotheruser",
+			Password: "hashedpassword",
+		}
+
+		err := repo.Create(duplicate)
+
+		assert.Error(t, err)
+	})
 }
 
-// -------------------------------------------------------------------
+// ===================================================================
 // FindByEmail 測試
-// -------------------------------------------------------------------
+// ===================================================================
 
 func TestUserRepository_FindByEmail(t *testing.T) {
-	db := setupIntegrationDB(t)
-	repo := NewUserRepository(db)
+	t.Run("found", func(t *testing.T) {
+		db := setupIntegrationDB(t)
+		repo := NewUserRepository(db)
 
-	// 先建一筆資料供查詢用
-	existing := &models.User{
-		ID:       "33333333-3333-3333-3333-333333333333",
-		Email:    "find@integration.test",
-		Username: "finduser",
-		Password: "hashedpassword",
-	}
-	require.NoError(t, repo.Create(existing))
+		// 先建一筆資料供查詢用
+		existing := &models.User{
+			ID:       "33333333-3333-3333-3333-333333333333",
+			Email:    "find@integration.test",
+			Username: "finduser",
+			Password: "hashedpassword",
+		}
+		require.NoError(t, repo.Create(existing))
 
-	tests := []struct {
-		name       string
-		email      string
-		expectUser bool
-	}{
-		{
-			name:       "found",
-			email:      "find@integration.test",
-			expectUser: true,
-		},
-		{
-			name:       "not found",
-			email:      "nobody@integration.test",
-			expectUser: false,
-		},
-	}
+		user, err := repo.FindByEmail("find@integration.test")
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			user, err := repo.FindByEmail(tt.email)
+		assert.NoError(t, err)
+		assert.NotNil(t, user)
+		assert.Equal(t, "find@integration.test", user.Email)
+		// FindByEmail 會查 password（登入用），確認有撈回來
+		assert.NotEmpty(t, user.Password)
+	})
 
-			assert.NoError(t, err)
-			if tt.expectUser {
-				assert.NotNil(t, user)
-				assert.Equal(t, tt.email, user.Email)
-				// FindByEmail 會查 password（登入用），確認有撈回來
-				assert.NotEmpty(t, user.Password)
-			} else {
-				assert.Nil(t, user)
-			}
-		})
-	}
+	t.Run("not found", func(t *testing.T) {
+		db := setupIntegrationDB(t)
+		repo := NewUserRepository(db)
+
+		user, err := repo.FindByEmail("nobody@integration.test")
+
+		assert.NoError(t, err)
+		assert.Nil(t, user)
+	})
 }
 
-// -------------------------------------------------------------------
+// ===================================================================
 // FindByID 測試
-// -------------------------------------------------------------------
+// ===================================================================
 
 func TestUserRepository_FindByID(t *testing.T) {
-	db := setupIntegrationDB(t)
-	repo := NewUserRepository(db)
+	t.Run("found", func(t *testing.T) {
+		db := setupIntegrationDB(t)
+		repo := NewUserRepository(db)
 
-	existing := &models.User{
-		ID:       "44444444-4444-4444-4444-444444444444",
-		Email:    "findbyid@integration.test",
-		Username: "findbyiduser",
-		Password: "hashedpassword",
-	}
-	require.NoError(t, repo.Create(existing))
+		existing := &models.User{
+			ID:       "44444444-4444-4444-4444-444444444444",
+			Email:    "findbyid@integration.test",
+			Username: "findbyiduser",
+			Password: "hashedpassword",
+		}
+		require.NoError(t, repo.Create(existing))
 
-	tests := []struct {
-		name       string
-		id         string
-		expectUser bool
-	}{
-		{
-			name:       "found",
-			id:         "44444444-4444-4444-4444-444444444444",
-			expectUser: true,
-		},
-		{
-			name:       "not found",
-			id:         "00000000-0000-0000-0000-000000000000",
-			expectUser: false,
-		},
-	}
+		user, err := repo.FindByID("44444444-4444-4444-4444-444444444444")
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			user, err := repo.FindByID(tt.id)
+		assert.NoError(t, err)
+		assert.NotNil(t, user)
+		assert.Equal(t, "44444444-4444-4444-4444-444444444444", user.ID)
+	})
 
-			assert.NoError(t, err)
-			if tt.expectUser {
-				assert.NotNil(t, user)
-				assert.Equal(t, tt.id, user.ID)
-			} else {
-				assert.Nil(t, user)
-			}
-		})
-	}
+	t.Run("not found", func(t *testing.T) {
+		db := setupIntegrationDB(t)
+		repo := NewUserRepository(db)
+
+		user, err := repo.FindByID("00000000-0000-0000-0000-000000000000")
+
+		assert.NoError(t, err)
+		assert.Nil(t, user)
+	})
 }
 
-// -------------------------------------------------------------------
+// ===================================================================
 // Update 測試
-// -------------------------------------------------------------------
+// ===================================================================
 
 func TestUserRepository_Update(t *testing.T) {
-	db := setupIntegrationDB(t)
-	repo := NewUserRepository(db)
+	t.Run("success", func(t *testing.T) {
+		db := setupIntegrationDB(t)
+		repo := NewUserRepository(db)
 
-	existing := &models.User{
-		ID:       "55555555-5555-5555-5555-555555555555",
-		Email:    "update@integration.test",
-		Username: "oldname",
-		Password: "hashedpassword",
-	}
-	require.NoError(t, repo.Create(existing))
+		existing := &models.User{
+			ID:       "55555555-5555-5555-5555-555555555555",
+			Email:    "update@integration.test",
+			Username: "oldname",
+			Password: "hashedpassword",
+		}
+		require.NoError(t, repo.Create(existing))
 
-	tests := []struct {
-		name        string
-		id          string
-		newUsername string
-		expectError bool
-	}{
-		{
-			name:        "success",
-			id:          "55555555-5555-5555-5555-555555555555",
-			newUsername: "newname",
-			expectError: false,
-		},
-		{
-			name:        "user not found",
-			id:          "00000000-0000-0000-0000-000000000000",
-			newUsername: "newname",
-			expectError: true,
-		},
-	}
+		err := repo.Update("55555555-5555-5555-5555-555555555555", "newname")
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			err := repo.Update(tt.id, tt.newUsername)
+		assert.NoError(t, err)
+		// 查回來確認真的有更新
+		updated, _ := repo.FindByID("55555555-5555-5555-5555-555555555555")
+		assert.Equal(t, "newname", updated.Username)
+	})
 
-			if tt.expectError {
-				assert.Error(t, err)
-			} else {
-				assert.NoError(t, err)
-				// 查回來確認真的有更新
-				updated, _ := repo.FindByID(tt.id)
-				assert.Equal(t, tt.newUsername, updated.Username)
-			}
-		})
-	}
+	t.Run("user not found", func(t *testing.T) {
+		db := setupIntegrationDB(t)
+		repo := NewUserRepository(db)
+
+		err := repo.Update("00000000-0000-0000-0000-000000000000", "newname")
+
+		assert.Error(t, err)
+	})
 }
 
-// -------------------------------------------------------------------
+// ===================================================================
 // Delete 測試
-// -------------------------------------------------------------------
+// ===================================================================
 
 func TestUserRepository_Delete(t *testing.T) {
-	db := setupIntegrationDB(t)
-	repo := NewUserRepository(db)
+	t.Run("success", func(t *testing.T) {
+		db := setupIntegrationDB(t)
+		repo := NewUserRepository(db)
 
-	existing := &models.User{
-		ID:       "66666666-6666-6666-6666-666666666666",
-		Email:    "delete@integration.test",
-		Username: "deleteuser",
-		Password: "hashedpassword",
-	}
-	require.NoError(t, repo.Create(existing))
+		existing := &models.User{
+			ID:       "66666666-6666-6666-6666-666666666666",
+			Email:    "delete@integration.test",
+			Username: "deleteuser",
+			Password: "hashedpassword",
+		}
+		require.NoError(t, repo.Create(existing))
 
-	tests := []struct {
-		name        string
-		id          string
-		expectError bool
-	}{
-		{
-			name:        "success",
-			id:          "66666666-6666-6666-6666-666666666666",
-			expectError: false,
-		},
-		{
-			name:        "already deleted",
-			id:          "66666666-6666-6666-6666-666666666666", // 同一筆，已被刪
-			expectError: true,
-		},
-		{
-			name:        "not found",
-			id:          "00000000-0000-0000-0000-000000000000",
-			expectError: true,
-		},
-	}
+		err := repo.Delete("66666666-6666-6666-6666-666666666666")
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			err := repo.Delete(tt.id)
+		assert.NoError(t, err)
+		// 查回來確認真的不見了
+		deleted, _ := repo.FindByID("66666666-6666-6666-6666-666666666666")
+		assert.Nil(t, deleted)
+	})
 
-			if tt.expectError {
-				assert.Error(t, err)
-			} else {
-				assert.NoError(t, err)
-				// 查回來確認真的不見了
-				deleted, _ := repo.FindByID(tt.id)
-				assert.Nil(t, deleted)
-			}
-		})
-	}
+	t.Run("already deleted", func(t *testing.T) {
+		db := setupIntegrationDB(t)
+		repo := NewUserRepository(db)
+
+		existing := &models.User{
+			ID:       "66666666-6666-6666-6666-666666666666",
+			Email:    "delete@integration.test",
+			Username: "deleteuser",
+			Password: "hashedpassword",
+		}
+		require.NoError(t, repo.Create(existing))
+		// 先刪一次
+		require.NoError(t, repo.Delete("66666666-6666-6666-6666-666666666666"))
+
+		// 再刪一次，應該要失敗
+		err := repo.Delete("66666666-6666-6666-6666-666666666666")
+
+		assert.Error(t, err)
+	})
+
+	t.Run("not found", func(t *testing.T) {
+		db := setupIntegrationDB(t)
+		repo := NewUserRepository(db)
+
+		err := repo.Delete("00000000-0000-0000-0000-000000000000")
+
+		assert.Error(t, err)
+	})
 }

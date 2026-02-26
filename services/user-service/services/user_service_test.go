@@ -54,98 +54,8 @@ func (m *MockUserRepository) Delete(id string) error {
 	return args.Error(0)
 }
 
-// -------------------------------------------------------------------
-// Register 測試
-// -------------------------------------------------------------------
-
-func TestRegister(t *testing.T) {
-	tests := []struct {
-		name          string
-		req           models.RegisterRequest
-		setupMock     func(*MockUserRepository)
-		expectUser    bool
-		expectedError string
-		// 額外驗證：成功時才會執行
-		checkUser func(*testing.T, *models.User)
-	}{
-		{
-			name: "success",
-			req: models.RegisterRequest{
-				Email:    "new@example.com",
-				Username: "newuser",
-				Password: "password123",
-			},
-			setupMock: func(m *MockUserRepository) {
-				m.On("FindByEmail", "new@example.com").Return(nil, nil)
-				m.On("Create", mock.AnythingOfType("*models.User")).Return(nil)
-			},
-			expectUser: true,
-			checkUser: func(t *testing.T, u *models.User) {
-				assert.Equal(t, "new@example.com", u.Email)
-				assert.Equal(t, "newuser", u.Username)
-				// 確認密碼已被 hash，不是明文
-				assert.NotEqual(t, "password123", u.Password)
-			},
-		},
-		{
-			name: "email already exists",
-			req: models.RegisterRequest{
-				Email:    "exist@example.com",
-				Username: "someone",
-				Password: "password123",
-			},
-			setupMock: func(m *MockUserRepository) {
-				existing := &models.User{Email: "exist@example.com"}
-				m.On("FindByEmail", "exist@example.com").Return(existing, nil)
-			},
-			expectUser:    false,
-			expectedError: "email already exists",
-		},
-		{
-			name: "db error on find",
-			req: models.RegisterRequest{
-				Email:    "error@example.com",
-				Username: "someone",
-				Password: "password123",
-			},
-			setupMock: func(m *MockUserRepository) {
-				m.On("FindByEmail", "error@example.com").Return(nil, fmt.Errorf("db connection failed"))
-			},
-			expectUser:    false,
-			expectedError: "db connection failed",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			mockRepo := new(MockUserRepository)
-			tt.setupMock(mockRepo)
-			svc := NewUserService(mockRepo)
-
-			user, err := svc.Register(tt.req)
-
-			if tt.expectUser {
-				assert.NoError(t, err)
-				assert.NotNil(t, user)
-				if tt.checkUser != nil {
-					tt.checkUser(t, user)
-				}
-			} else {
-				assert.Error(t, err)
-				assert.Nil(t, user)
-				assert.Contains(t, err.Error(), tt.expectedError)
-			}
-			mockRepo.AssertExpectations(t)
-		})
-	}
-}
-
-// -------------------------------------------------------------------
-// Login 測試
-// Login 的特殊性：success / wrong password 都需要先有 bcrypt hash 過的 user
-// 所以用 setupUser helper 產生，不重複寫 register 流程
-// -------------------------------------------------------------------
-
+// setupHashedUser：呼叫真實 Register 取得已 bcrypt hash 過的 user
+// Login 測試需要 hash 過的密碼，用這個 helper 產生，避免重複寫 register 流程
 func setupHashedUser(t *testing.T, email, username, password string) *models.User {
 	t.Helper()
 	mockRepo := new(MockUserRepository)
@@ -157,179 +67,221 @@ func setupHashedUser(t *testing.T, email, username, password string) *models.Use
 	return user
 }
 
-func TestLogin(t *testing.T) {
-	hashedUser := setupHashedUser(t, "user@example.com", "user", "correctpassword")
+// ===================================================================
+// Register 測試
+// ===================================================================
 
-	tests := []struct {
-		name          string
-		req           models.LoginRequest
-		setupMock     func(*MockUserRepository)
-		expectUser    bool
-		expectedError string
-	}{
-		{
-			name: "success",
-			req:  models.LoginRequest{Email: "user@example.com", Password: "correctpassword"},
-			setupMock: func(m *MockUserRepository) {
-				m.On("FindByEmail", "user@example.com").Return(hashedUser, nil)
-			},
-			expectUser: true,
-		},
-		{
-			name: "user not found",
-			req:  models.LoginRequest{Email: "ghost@example.com", Password: "somepassword"},
-			setupMock: func(m *MockUserRepository) {
-				m.On("FindByEmail", "ghost@example.com").Return(nil, nil)
-			},
-			expectUser:    false,
-			expectedError: "invalid credentials",
-		},
-		{
-			name: "wrong password",
-			req:  models.LoginRequest{Email: "user@example.com", Password: "wrongpassword"},
-			setupMock: func(m *MockUserRepository) {
-				m.On("FindByEmail", "user@example.com").Return(hashedUser, nil)
-			},
-			expectUser:    false,
-			expectedError: "invalid credentials",
-		},
-		{
-			name: "db error",
-			req:  models.LoginRequest{Email: "user@example.com", Password: "correctpassword"},
-			setupMock: func(m *MockUserRepository) {
-				m.On("FindByEmail", "user@example.com").Return(nil, fmt.Errorf("db connection failed"))
-			},
-			expectUser:    false,
-			expectedError: "db connection failed",
-		},
-	}
+func TestRegister(t *testing.T) {
+	t.Run("success", func(t *testing.T) {
+		mockRepo := new(MockUserRepository)
+		// email 不存在 → 回傳 nil, nil
+		mockRepo.On("FindByEmail", "new@example.com").Return(nil, nil)
+		// Create 被呼叫時，接受任意 *models.User，成功不回錯誤
+		mockRepo.On("Create", mock.AnythingOfType("*models.User")).Return(nil)
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			mockRepo := new(MockUserRepository)
-			tt.setupMock(mockRepo)
-			svc := NewUserService(mockRepo)
-
-			user, err := svc.Login(tt.req)
-
-			if tt.expectUser {
-				assert.NoError(t, err)
-				assert.NotNil(t, user)
-				assert.Equal(t, tt.req.Email, user.Email)
-			} else {
-				assert.Error(t, err)
-				assert.Nil(t, user)
-				assert.Contains(t, err.Error(), tt.expectedError)
-			}
-			mockRepo.AssertExpectations(t)
+		svc := NewUserService(mockRepo)
+		user, err := svc.Register(models.RegisterRequest{
+			Email:    "new@example.com",
+			Username: "newuser",
+			Password: "password123",
 		})
-	}
+
+		assert.NoError(t, err)
+		assert.NotNil(t, user)
+		assert.Equal(t, "new@example.com", user.Email)
+		assert.Equal(t, "newuser", user.Username)
+		// 確認密碼已被 hash，不是明文
+		assert.NotEqual(t, "password123", user.Password)
+		mockRepo.AssertExpectations(t)
+	})
+
+	t.Run("email already exists", func(t *testing.T) {
+		mockRepo := new(MockUserRepository)
+		// email 已存在 → 回傳一個有資料的 user
+		existing := &models.User{Email: "exist@example.com"}
+		mockRepo.On("FindByEmail", "exist@example.com").Return(existing, nil)
+
+		svc := NewUserService(mockRepo)
+		user, err := svc.Register(models.RegisterRequest{
+			Email:    "exist@example.com",
+			Username: "someone",
+			Password: "password123",
+		})
+
+		assert.Error(t, err)
+		assert.Nil(t, user)
+		assert.Contains(t, err.Error(), "email already exists")
+		// Create 應該完全沒被呼叫
+		mockRepo.AssertExpectations(t)
+	})
+
+	t.Run("db error on find", func(t *testing.T) {
+		mockRepo := new(MockUserRepository)
+		// FindByEmail 本身就出錯（DB 連線問題等）
+		mockRepo.On("FindByEmail", "error@example.com").Return(nil, fmt.Errorf("db connection failed"))
+
+		svc := NewUserService(mockRepo)
+		user, err := svc.Register(models.RegisterRequest{
+			Email:    "error@example.com",
+			Username: "someone",
+			Password: "password123",
+		})
+
+		assert.Error(t, err)
+		assert.Nil(t, user)
+		assert.Contains(t, err.Error(), "db connection failed")
+		mockRepo.AssertExpectations(t)
+	})
 }
 
-// -------------------------------------------------------------------
+// ===================================================================
+// Login 測試
+// ===================================================================
+
+func TestLogin(t *testing.T) {
+	t.Run("success", func(t *testing.T) {
+		// 先透過 Register 產生 hash 過的 user，模擬 DB 裡存的狀態
+		hashedUser := setupHashedUser(t, "user@example.com", "user", "correctpassword")
+
+		mockRepo := new(MockUserRepository)
+		mockRepo.On("FindByEmail", "user@example.com").Return(hashedUser, nil)
+
+		svc := NewUserService(mockRepo)
+		user, err := svc.Login(models.LoginRequest{
+			Email:    "user@example.com",
+			Password: "correctpassword",
+		})
+
+		assert.NoError(t, err)
+		assert.NotNil(t, user)
+		assert.Equal(t, "user@example.com", user.Email)
+		mockRepo.AssertExpectations(t)
+	})
+
+	t.Run("user not found", func(t *testing.T) {
+		mockRepo := new(MockUserRepository)
+		// email 查不到 → 回傳 nil, nil（不是 error，只是找不到）
+		mockRepo.On("FindByEmail", "ghost@example.com").Return(nil, nil)
+
+		svc := NewUserService(mockRepo)
+		user, err := svc.Login(models.LoginRequest{
+			Email:    "ghost@example.com",
+			Password: "somepassword",
+		})
+
+		assert.Error(t, err)
+		assert.Nil(t, user)
+		assert.Contains(t, err.Error(), "invalid credentials")
+		mockRepo.AssertExpectations(t)
+	})
+
+	t.Run("wrong password", func(t *testing.T) {
+		// 有這個 user，但密碼錯
+		hashedUser := setupHashedUser(t, "user@example.com", "user", "correctpassword")
+
+		mockRepo := new(MockUserRepository)
+		mockRepo.On("FindByEmail", "user@example.com").Return(hashedUser, nil)
+
+		svc := NewUserService(mockRepo)
+		user, err := svc.Login(models.LoginRequest{
+			Email:    "user@example.com",
+			Password: "wrongpassword",
+		})
+
+		assert.Error(t, err)
+		assert.Nil(t, user)
+		assert.Contains(t, err.Error(), "invalid credentials")
+		mockRepo.AssertExpectations(t)
+	})
+
+	t.Run("db error", func(t *testing.T) {
+		mockRepo := new(MockUserRepository)
+		mockRepo.On("FindByEmail", "user@example.com").Return(nil, fmt.Errorf("db connection failed"))
+
+		svc := NewUserService(mockRepo)
+		user, err := svc.Login(models.LoginRequest{
+			Email:    "user@example.com",
+			Password: "correctpassword",
+		})
+
+		assert.Error(t, err)
+		assert.Nil(t, user)
+		assert.Contains(t, err.Error(), "db connection failed")
+		mockRepo.AssertExpectations(t)
+	})
+}
+
+// ===================================================================
 // GetUserByID 測試
-// -------------------------------------------------------------------
+// ===================================================================
 
 func TestGetUserByID(t *testing.T) {
-	tests := []struct {
-		name          string
-		id            string
-		setupMock     func(*MockUserRepository)
-		expectUser    bool
-		expectedError string
-	}{
-		{
-			name: "success",
-			id:   "abc-123",
-			setupMock: func(m *MockUserRepository) {
-				m.On("FindByID", "abc-123").Return(&models.User{ID: "abc-123", Email: "u@example.com"}, nil)
-			},
-			expectUser: true,
-		},
-		{
-			name: "not found",
-			id:   "not-exist",
-			setupMock: func(m *MockUserRepository) {
-				m.On("FindByID", "not-exist").Return(nil, nil)
-			},
-			expectUser:    false,
-			expectedError: "user not found",
-		},
-		{
-			name: "db error",
-			id:   "error-id",
-			setupMock: func(m *MockUserRepository) {
-				m.On("FindByID", "error-id").Return(nil, fmt.Errorf("db error"))
-			},
-			expectUser:    false,
-			expectedError: "db error",
-		},
-	}
+	t.Run("success", func(t *testing.T) {
+		mockRepo := new(MockUserRepository)
+		mockRepo.On("FindByID", "abc-123").Return(&models.User{ID: "abc-123", Email: "u@example.com"}, nil)
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			mockRepo := new(MockUserRepository)
-			tt.setupMock(mockRepo)
-			svc := NewUserService(mockRepo)
+		svc := NewUserService(mockRepo)
+		user, err := svc.GetUserByID("abc-123")
 
-			user, err := svc.GetUserByID(tt.id)
+		assert.NoError(t, err)
+		assert.NotNil(t, user)
+		assert.Equal(t, "abc-123", user.ID)
+		mockRepo.AssertExpectations(t)
+	})
 
-			if tt.expectUser {
-				assert.NoError(t, err)
-				assert.Equal(t, tt.id, user.ID)
-			} else {
-				assert.Error(t, err)
-				assert.Nil(t, user)
-				assert.Contains(t, err.Error(), tt.expectedError)
-			}
-			mockRepo.AssertExpectations(t)
-		})
-	}
+	t.Run("not found", func(t *testing.T) {
+		mockRepo := new(MockUserRepository)
+		// DB 查無此 ID → 回傳 nil, nil
+		mockRepo.On("FindByID", "not-exist").Return(nil, nil)
+
+		svc := NewUserService(mockRepo)
+		user, err := svc.GetUserByID("not-exist")
+
+		assert.Error(t, err)
+		assert.Nil(t, user)
+		assert.Contains(t, err.Error(), "user not found")
+		mockRepo.AssertExpectations(t)
+	})
+
+	t.Run("db error", func(t *testing.T) {
+		mockRepo := new(MockUserRepository)
+		mockRepo.On("FindByID", "error-id").Return(nil, fmt.Errorf("db error"))
+
+		svc := NewUserService(mockRepo)
+		user, err := svc.GetUserByID("error-id")
+
+		assert.Error(t, err)
+		assert.Nil(t, user)
+		assert.Contains(t, err.Error(), "db error")
+		mockRepo.AssertExpectations(t)
+	})
 }
 
-// -------------------------------------------------------------------
+// ===================================================================
 // DeleteUser 測試
-// -------------------------------------------------------------------
+// ===================================================================
 
 func TestDeleteUser(t *testing.T) {
-	tests := []struct {
-		name          string
-		id            string
-		setupMock     func(*MockUserRepository)
-		expectedError string
-	}{
-		{
-			name: "success",
-			id:   "abc-123",
-			setupMock: func(m *MockUserRepository) {
-				m.On("Delete", "abc-123").Return(nil)
-			},
-		},
-		{
-			name: "not found",
-			id:   "ghost-id",
-			setupMock: func(m *MockUserRepository) {
-				m.On("Delete", "ghost-id").Return(fmt.Errorf("user not found"))
-			},
-			expectedError: "user not found",
-		},
-	}
+	t.Run("success", func(t *testing.T) {
+		mockRepo := new(MockUserRepository)
+		mockRepo.On("Delete", "abc-123").Return(nil)
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			mockRepo := new(MockUserRepository)
-			tt.setupMock(mockRepo)
-			svc := NewUserService(mockRepo)
+		svc := NewUserService(mockRepo)
+		err := svc.DeleteUser("abc-123")
 
-			err := svc.DeleteUser(tt.id)
+		assert.NoError(t, err)
+		mockRepo.AssertExpectations(t)
+	})
 
-			if tt.expectedError == "" {
-				assert.NoError(t, err)
-			} else {
-				assert.Error(t, err)
-				assert.EqualError(t, err, tt.expectedError)
-			}
-			mockRepo.AssertExpectations(t)
-		})
-	}
+	t.Run("not found", func(t *testing.T) {
+		mockRepo := new(MockUserRepository)
+		mockRepo.On("Delete", "ghost-id").Return(fmt.Errorf("user not found"))
+
+		svc := NewUserService(mockRepo)
+		err := svc.DeleteUser("ghost-id")
+
+		assert.Error(t, err)
+		assert.EqualError(t, err, "user not found")
+		mockRepo.AssertExpectations(t)
+	})
 }
