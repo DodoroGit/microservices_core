@@ -33,5 +33,6 @@ type UpdateUserRequest struct {
 // LoginResponse 登入響應
 type LoginResponse struct {
 	Message string `json:"message"`
+	Token   string `json:"token"` // JWT token，前端後續請求放進 Authorization header
 	User    User   `json:"user"`
 }

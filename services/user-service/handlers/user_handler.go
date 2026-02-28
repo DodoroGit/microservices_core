@@ -2,20 +2,30 @@ package handlers
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v5"
 	"user-service/models"
 	"user-service/services"
 )
 
+// Claims 定義 JWT payload 的內容
+type Claims struct {
+	UserID string `json:"user_id"`
+	Email  string `json:"email"`
+	jwt.RegisteredClaims
+}
+
 // UserHandler 用戶 HTTP 處理層
 type UserHandler struct {
-	service services.UserServiceInterface
+	service   services.UserServiceInterface
+	jwtSecret string
 }
 
 // NewUserHandler 創建用戶 Handler
-func NewUserHandler(service services.UserServiceInterface) *UserHandler {
-	return &UserHandler{service: service}
+func NewUserHandler(service services.UserServiceInterface, jwtSecret string) *UserHandler {
+	return &UserHandler{service: service, jwtSecret: jwtSecret}
 }
 
 // Register 註冊處理
@@ -35,7 +45,7 @@ func (h *UserHandler) Register(c *gin.Context) {
 	c.JSON(http.StatusCreated, user)
 }
 
-// Login 登入處理
+// Login 登入處理：驗證帳密，成功後簽發 JWT token
 func (h *UserHandler) Login(c *gin.Context) {
 	var req models.LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -49,8 +59,26 @@ func (h *UserHandler) Login(c *gin.Context) {
 		return
 	}
 
+	// ── 產生 JWT token ────────────────────────────────────────────────────
+	claims := &Claims{
+		UserID: user.ID,
+		Email:  user.Email,
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)), // 24 小時後過期
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+		},
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	tokenString, err := token.SignedString([]byte(h.jwtSecret))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "產生 token 失敗"})
+		return
+	}
+
 	c.JSON(http.StatusOK, models.LoginResponse{
 		Message: "Login successful",
+		Token:   tokenString,
 		User:    *user,
 	})
 }

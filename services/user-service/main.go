@@ -35,7 +35,7 @@ func main() {
 	// 初始化各層
 	userRepo := repository.NewUserRepository(db)
 	userService := services.NewUserService(userRepo)
-	userHandler := handlers.NewUserHandler(userService)
+	userHandler := handlers.NewUserHandler(userService, cfg.JWTSecret)
 
 	// 設定路由
 	router := gin.Default()

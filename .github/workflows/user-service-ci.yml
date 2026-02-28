@@ -8,7 +8,7 @@ on:
 
 jobs:
   unit-test:
-    name: 🧪 Unit Tests (user-service)
+    name: Unit Tests (user-service)
     runs-on: ubuntu-latest
 
     defaults:

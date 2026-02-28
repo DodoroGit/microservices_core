@@ -92,7 +92,7 @@ func TestRegisterHandler(t *testing.T) {
 			Password: "password123",
 		}).Return(&models.User{ID: "uuid-001", Email: "test@example.com", Username: "testuser"}, nil)
 
-		router := setupTestRouter(NewUserHandler(mockSvc))
+		router := setupTestRouter(NewUserHandler(mockSvc, "test-secret"))
 
 		body, _ := json.Marshal(models.RegisterRequest{
 			Email:    "test@example.com",
@@ -114,7 +114,7 @@ func TestRegisterHandler(t *testing.T) {
 	t.Run("invalid body - missing fields", func(t *testing.T) {
 		mockSvc := new(MockUserService)
 
-		router := setupTestRouter(NewUserHandler(mockSvc))
+		router := setupTestRouter(NewUserHandler(mockSvc, "test-secret"))
 
 		body, _ := json.Marshal(map[string]string{"email": "not-valid-email"})
 		w := httptest.NewRecorder()
@@ -135,7 +135,7 @@ func TestRegisterHandler(t *testing.T) {
 			Password: "password123",
 		}).Return(nil, fmt.Errorf("email already exists"))
 
-		router := setupTestRouter(NewUserHandler(mockSvc))
+		router := setupTestRouter(NewUserHandler(mockSvc, "test-secret"))
 
 		body, _ := json.Marshal(models.RegisterRequest{
 			Email:    "exist@example.com",
@@ -164,7 +164,7 @@ func TestLoginHandler(t *testing.T) {
 			Password: "password123",
 		}).Return(&models.User{ID: "uuid-001", Email: "user@example.com"}, nil)
 
-		router := setupTestRouter(NewUserHandler(mockSvc))
+		router := setupTestRouter(NewUserHandler(mockSvc, "test-secret"))
 
 		body, _ := json.Marshal(models.LoginRequest{
 			Email:    "user@example.com",
@@ -185,7 +185,7 @@ func TestLoginHandler(t *testing.T) {
 	t.Run("invalid body", func(t *testing.T) {
 		mockSvc := new(MockUserService)
 
-		router := setupTestRouter(NewUserHandler(mockSvc))
+		router := setupTestRouter(NewUserHandler(mockSvc, "test-secret"))
 
 		body, _ := json.Marshal(map[string]string{"email": "no-password"})
 		w := httptest.NewRecorder()
@@ -204,7 +204,7 @@ func TestLoginHandler(t *testing.T) {
 			Password: "wrongpass",
 		}).Return(nil, fmt.Errorf("invalid credentials"))
 
-		router := setupTestRouter(NewUserHandler(mockSvc))
+		router := setupTestRouter(NewUserHandler(mockSvc, "test-secret"))
 
 		body, _ := json.Marshal(models.LoginRequest{
 			Email:    "user@example.com",
@@ -229,7 +229,7 @@ func TestGetUserHandler(t *testing.T) {
 		mockSvc := new(MockUserService)
 		mockSvc.On("GetUserByID", "abc-123").Return(&models.User{ID: "abc-123", Email: "u@example.com"}, nil)
 
-		router := setupTestRouter(NewUserHandler(mockSvc))
+		router := setupTestRouter(NewUserHandler(mockSvc, "test-secret"))
 
 		w := httptest.NewRecorder()
 		r, _ := http.NewRequest("GET", "/users/abc-123", nil)
@@ -246,7 +246,7 @@ func TestGetUserHandler(t *testing.T) {
 		mockSvc := new(MockUserService)
 		mockSvc.On("GetUserByID", "no-such-id").Return(nil, fmt.Errorf("user not found"))
 
-		router := setupTestRouter(NewUserHandler(mockSvc))
+		router := setupTestRouter(NewUserHandler(mockSvc, "test-secret"))
 
 		w := httptest.NewRecorder()
 		r, _ := http.NewRequest("GET", "/users/no-such-id", nil)
@@ -266,7 +266,7 @@ func TestDeleteUserHandler(t *testing.T) {
 		mockSvc := new(MockUserService)
 		mockSvc.On("DeleteUser", "abc-123").Return(nil)
 
-		router := setupTestRouter(NewUserHandler(mockSvc))
+		router := setupTestRouter(NewUserHandler(mockSvc, "test-secret"))
 
 		w := httptest.NewRecorder()
 		r, _ := http.NewRequest("DELETE", "/users/abc-123", nil)
@@ -280,7 +280,7 @@ func TestDeleteUserHandler(t *testing.T) {
 		mockSvc := new(MockUserService)
 		mockSvc.On("DeleteUser", "ghost-id").Return(fmt.Errorf("user not found"))
 
-		router := setupTestRouter(NewUserHandler(mockSvc))
+		router := setupTestRouter(NewUserHandler(mockSvc, "test-secret"))
 
 		w := httptest.NewRecorder()
 		r, _ := http.NewRequest("DELETE", "/users/ghost-id", nil)
@@ -298,7 +298,7 @@ func TestDeleteUserHandler(t *testing.T) {
 
 func TestHealthHandler(t *testing.T) {
 	mockSvc := new(MockUserService)
-	router := setupTestRouter(NewUserHandler(mockSvc))
+	router := setupTestRouter(NewUserHandler(mockSvc, "test-secret"))
 
 	w := httptest.NewRecorder()
 	r, _ := http.NewRequest("GET", "/health", nil)

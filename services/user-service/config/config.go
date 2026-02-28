@@ -4,9 +4,10 @@ import "os"
 
 // Config 應用配置
 type Config struct {
-	Port     string
-	Database DatabaseConfig
-	Redis    RedisConfig
+	Port      string
+	JWTSecret string
+	Database  DatabaseConfig
+	Redis     RedisConfig
 }
 
 // DatabaseConfig 資料庫配置
@@ -27,7 +28,8 @@ type RedisConfig struct {
 // Load 從環境變數載入配置
 func Load() *Config {
 	return &Config{
-		Port: getEnv("PORT", "8081"),
+		Port:      getEnv("PORT", "8081"),
+		JWTSecret: getEnv("JWT_SECRET", "dev-secret-change-in-production"),
 		Database: DatabaseConfig{
 			Host:     getEnv("DB_HOST", "localhost"),
 			Port:     getEnv("DB_PORT", "5432"),
