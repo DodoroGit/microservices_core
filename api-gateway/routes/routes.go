@@ -41,7 +41,7 @@ func Setup(r *gin.Engine, cfg *config.Config) {
 	// 公開路由：不需要驗證身份（登入、註冊不可能先有 token）
 	public := r.Group("/api")
 	{
-		public.POST("/users/login",    p.Forward(cfg.UserServiceURL, "/api"))
+		public.POST("/users/login", p.Forward(cfg.UserServiceURL, "/api"))
 		public.POST("/users/register", p.Forward(cfg.UserServiceURL, "/api"))
 	}
 
@@ -49,10 +49,9 @@ func Setup(r *gin.Engine, cfg *config.Config) {
 	protected := r.Group("/api")
 	protected.Use(middleware.RequireAuth(cfg.JWTSecret))
 	{
-		protected.GET("/users",        p.Forward(cfg.UserServiceURL, "/api"))
-		protected.GET("/users/:id",    p.Forward(cfg.UserServiceURL, "/api"))
-		protected.POST("/users",       p.Forward(cfg.UserServiceURL, "/api"))
-		protected.PUT("/users/:id",    p.Forward(cfg.UserServiceURL, "/api"))
+		protected.GET("/users", p.Forward(cfg.UserServiceURL, "/api"))
+		protected.GET("/users/:id", p.Forward(cfg.UserServiceURL, "/api"))
+		protected.PUT("/users/:id", p.Forward(cfg.UserServiceURL, "/api"))
 		protected.DELETE("/users/:id", p.Forward(cfg.UserServiceURL, "/api"))
 	}
 }

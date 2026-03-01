@@ -1,73 +1,89 @@
-import React, { useState, useEffect } from 'react';
-import { userAPI } from '../api';
+import React, { useState, useEffect } from 'react'
+import { userAPI } from '../api'
 
 function Dashboard({ user }) {
-  const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [users, setUsers] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
 
   useEffect(() => {
-    fetchUsers();
-  }, []);
+    fetchUsers()
+  }, [])
 
   const fetchUsers = async () => {
     try {
-      const response = await userAPI.getUsers();
-      setUsers(response.data || []);
-      setLoading(false);
+      const response = await userAPI.getUsers()
+      setUsers(response.data || [])
+      setLoading(false)
     } catch (err) {
-      setError('無法載入用戶列表');
-      setLoading(false);
+      setError('無法載入用戶列表')
+      setLoading(false)
     }
-  };
+  }
 
   return (
-    <div className="dashboard">
-      <h2>控制台</h2>
-
-      <div className="user-info">
-        <h3>個人資訊</h3>
-        <p><strong>ID:</strong> {user.id}</p>
-        <p><strong>Email:</strong> {user.email}</p>
-        <p><strong>用戶名稱:</strong> {user.username}</p>
-        <p><strong>建立時間:</strong> {new Date(user.created_at).toLocaleString('zh-TW')}</p>
+    <div className="dashboard-page">
+      <div className="page-header dark-header">
+        <div>
+          <h1>Dashboard</h1>
+          <p>歡迎回來，{user.username}</p>
+        </div>
       </div>
 
-      <div style={{ marginTop: '2rem' }}>
-        <h3>所有用戶</h3>
-        {loading && <p>載入中...</p>}
-        {error && <div className="error-message">{error}</div>}
-        {!loading && !error && (
-          <div style={{ background: 'white', padding: '1rem', borderRadius: '8px', marginTop: '1rem' }}>
-            {users.length === 0 ? (
-              <p>暫無用戶</p>
-            ) : (
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+      <div className="dashboard-content">
+        <div className="profile-card">
+          <div className="profile-avatar">{user.username?.[0]?.toUpperCase()}</div>
+          <div className="profile-info">
+            <h2>{user.username}</h2>
+            <p className="profile-email">{user.email}</p>
+            <p className="profile-date">加入時間：{new Date(user.created_at).toLocaleString('zh-TW')}</p>
+          </div>
+        </div>
+
+        <div className="users-section">
+          <div className="section-header">
+            <h3>所有用戶</h3>
+            <span className="count-badge">{users.length} 人</span>
+          </div>
+          {loading && <div className="loading-state">載入中...</div>}
+          {error && <div className="error-message" style={{ margin: '16px 24px' }}>{error}</div>}
+          {!loading && !error && (
+            <div className="users-table-wrapper">
+              <table className="users-table">
                 <thead>
-                  <tr style={{ borderBottom: '2px solid #ddd' }}>
-                    <th style={{ padding: '0.75rem', textAlign: 'left' }}>用戶名稱</th>
-                    <th style={{ padding: '0.75rem', textAlign: 'left' }}>Email</th>
-                    <th style={{ padding: '0.75rem', textAlign: 'left' }}>建立時間</th>
+                  <tr>
+                    <th>用戶名稱</th>
+                    <th>Email</th>
+                    <th>建立時間</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {users.map((u) => (
-                    <tr key={u.id} style={{ borderBottom: '1px solid #eee' }}>
-                      <td style={{ padding: '0.75rem' }}>{u.username}</td>
-                      <td style={{ padding: '0.75rem' }}>{u.email}</td>
-                      <td style={{ padding: '0.75rem' }}>
-                        {new Date(u.created_at).toLocaleDateString('zh-TW')}
-                      </td>
+                  {users.length === 0 ? (
+                    <tr>
+                      <td colSpan={3} className="empty-state">暫無用戶</td>
                     </tr>
-                  ))}
+                  ) : (
+                    users.map((u) => (
+                      <tr key={u.id}>
+                        <td>
+                          <div className="user-cell">
+                            <div className="user-avatar-sm">{u.username?.[0]?.toUpperCase()}</div>
+                            {u.username}
+                          </div>
+                        </td>
+                        <td>{u.email}</td>
+                        <td>{new Date(u.created_at).toLocaleDateString('zh-TW')}</td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
-            )}
-          </div>
-        )}
+            </div>
+          )}
+        </div>
       </div>
     </div>
-  );
+  )
 }
 
-export default Dashboard;
+export default Dashboard

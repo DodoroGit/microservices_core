@@ -1,15 +1,23 @@
 import React, { useState, useEffect } from 'react'
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom'
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import './App.css'
+import Sidebar from './components/Sidebar.jsx'
+import Home from './components/Home.jsx'
 import Login from './components/Login.jsx'
 import Register from './components/Register.jsx'
 import Dashboard from './components/Dashboard.jsx'
+import Notes from './components/Notes.jsx'
+import AILab from './components/AILab.jsx'
+
+function ProtectedRoute({ user, children }) {
+  if (!user) return <Navigate to="/login" replace />
+  return children
+}
 
 function App() {
   const [user, setUser] = useState(null)
 
   useEffect(() => {
-    // Check if user is logged in
     const savedUser = localStorage.getItem('user')
     if (savedUser) {
       setUser(JSON.parse(savedUser))
@@ -18,44 +26,33 @@ function App() {
 
   const handleLogout = () => {
     localStorage.removeItem('user')
+    localStorage.removeItem('token')
     setUser(null)
   }
 
   return (
     <Router>
-      <div className="App">
-        <header className="App-header">
-          <nav>
-            <h1>Microservices App</h1>
-            <div className="nav-links">
-              {user ? (
-                <>
-                  <Link to="/dashboard">Dashboard</Link>
-                  <button onClick={handleLogout}>登出</button>
-                  <span>歡迎, {user.username}</span>
-                </>
-              ) : (
-                <>
-                  <Link to="/login">登入</Link>
-                  <Link to="/register">註冊</Link>
-                </>
-              )}
-            </div>
-          </nav>
-        </header>
-
-        <main className="App-main">
+      <div className="app-layout">
+        <Sidebar user={user} onLogout={handleLogout} />
+        <main className="app-main">
           <Routes>
-            <Route path="/" element={
-              <div className="home">
-                <h2>歡迎來到微服務架構個人網站</h2>
-                <p>這是一個使用 React + Golang + PostgreSQL 的微服務架構示例</p>
-              </div>
-            } />
+            <Route path="/" element={<Home user={user} />} />
             <Route path="/login" element={<Login setUser={setUser} />} />
             <Route path="/register" element={<Register />} />
             <Route path="/dashboard" element={
-              user ? <Dashboard user={user} /> : <Login setUser={setUser} />
+              <ProtectedRoute user={user}>
+                <Dashboard user={user} />
+              </ProtectedRoute>
+            } />
+            <Route path="/notes" element={
+              <ProtectedRoute user={user}>
+                <Notes />
+              </ProtectedRoute>
+            } />
+            <Route path="/ai" element={
+              <ProtectedRoute user={user}>
+                <AILab />
+              </ProtectedRoute>
             } />
           </Routes>
         </main>
