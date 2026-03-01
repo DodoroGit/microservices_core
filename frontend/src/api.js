@@ -24,6 +24,7 @@ export const userAPI = {
   getUser: (id) => api.get(`/api/users/${id}`),
   updateUser: (id, userData) => api.put(`/api/users/${id}`, userData),
   deleteUser: (id) => api.delete(`/api/users/${id}`),
+  updateUserRole: (id, role) => api.patch(`/api/users/${id}/role`, { role }),
 };
 
 export default api;

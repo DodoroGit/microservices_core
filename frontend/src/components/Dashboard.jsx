@@ -21,6 +21,15 @@ function Dashboard({ user }) {
     }
   }
 
+  const handleSetAdmin = async (id) => {
+    try {
+      await userAPI.updateUserRole(id, 'admin')
+      await fetchUsers()
+    } catch (err) {
+      alert('更新角色失敗')
+    }
+  }
+
   return (
     <div className="dashboard-page">
       <div className="page-header dark-header">
@@ -54,13 +63,15 @@ function Dashboard({ user }) {
                   <tr>
                     <th>用戶名稱</th>
                     <th>Email</th>
+                    <th>角色</th>
                     <th>建立時間</th>
+                    {user.role === 'admin' && <th>操作</th>}
                   </tr>
                 </thead>
                 <tbody>
                   {users.length === 0 ? (
                     <tr>
-                      <td colSpan={3} className="empty-state">暫無用戶</td>
+                      <td colSpan={user.role === 'admin' ? 5 : 4} className="empty-state">暫無用戶</td>
                     </tr>
                   ) : (
                     users.map((u) => (
@@ -72,7 +83,17 @@ function Dashboard({ user }) {
                           </div>
                         </td>
                         <td>{u.email}</td>
+                        <td>{u.role}</td>
                         <td>{new Date(u.created_at).toLocaleDateString('zh-TW')}</td>
+                        {user.role === 'admin' && (
+                          <td>
+                            {u.role !== 'admin' && (
+                              <button className="btn-primary" style={{ padding: '6px 14px', fontSize: '13px' }} onClick={() => handleSetAdmin(u.id)}>
+                                設為 Admin
+                              </button>
+                            )}
+                          </td>
+                        )}
                       </tr>
                     ))
                   )}

@@ -8,6 +8,7 @@ type User struct {
 	Email     string    `json:"email"`
 	Username  string    `json:"username"`
 	Password  string    `json:"-"` // 不在 JSON 中顯示
+	Role      string    `json:"role"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }
@@ -28,6 +29,11 @@ type LoginRequest struct {
 // UpdateUserRequest 更新用戶請求
 type UpdateUserRequest struct {
 	Username string `json:"username"`
+}
+
+// UpdateRoleRequest 更新角色請求
+type UpdateRoleRequest struct {
+	Role string `json:"role"`
 }
 
 // LoginResponse 登入響應

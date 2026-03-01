@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 
 const CATEGORIES = ['技術筆記', '專案', '每日閱讀']
 
-function Notes() {
+function Notes({ user }) {
   const [showModal, setShowModal] = useState(false)
   const [form, setForm] = useState({ title: '', category: '技術筆記', content: '' })
 
@@ -25,14 +25,18 @@ function Notes() {
           <h1>技術筆記</h1>
           <p>記錄你的學習軌跡</p>
         </div>
-        <button className="btn-primary" onClick={() => setShowModal(true)}>+ 新增內容</button>
+        {user?.role === 'admin' && (
+          <button className="btn-primary" onClick={() => setShowModal(true)}>+ 新增內容</button>
+        )}
       </div>
 
       <div className="coming-soon-section">
         <div className="coming-soon-icon">🚧</div>
         <h2>後端功能開發中</h2>
         <p>筆記儲存功能即將上線，目前可以點選「新增內容」預覽新增流程。</p>
-        <button className="btn-outline-light" onClick={() => setShowModal(true)}>預覽新增功能</button>
+        {user?.role === 'admin' && (
+          <button className="btn-outline-light" onClick={() => setShowModal(true)}>預覽新增功能</button>
+        )}
       </div>
 
       {showModal && (

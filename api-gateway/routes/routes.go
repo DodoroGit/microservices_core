@@ -21,7 +21,7 @@ func Setup(r *gin.Engine, cfg *config.Config) {
 	r.Use(middleware.Logger())
 	r.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{"http://localhost:3000"},
-		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
 		ExposeHeaders:    []string{"Content-Length"},
 		AllowCredentials: true,
@@ -53,5 +53,13 @@ func Setup(r *gin.Engine, cfg *config.Config) {
 		protected.GET("/users/:id", p.Forward(cfg.UserServiceURL, "/api"))
 		protected.PUT("/users/:id", p.Forward(cfg.UserServiceURL, "/api"))
 		protected.DELETE("/users/:id", p.Forward(cfg.UserServiceURL, "/api"))
+	}
+
+	// Admin-only 路由：需要 admin 角色
+	admin := r.Group("/api")
+	admin.Use(middleware.RequireAuth(cfg.JWTSecret))
+	admin.Use(middleware.RequireAdmin())
+	{
+		admin.PATCH("/users/:id/role", p.Forward(cfg.UserServiceURL, "/api"))
 	}
 }

@@ -46,7 +46,7 @@ function App() {
             } />
             <Route path="/notes" element={
               <ProtectedRoute user={user}>
-                <Notes />
+                <Notes user={user} />
               </ProtectedRoute>
             } />
             <Route path="/ai" element={

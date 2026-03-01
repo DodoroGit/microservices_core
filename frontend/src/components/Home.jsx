@@ -1,17 +1,15 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
 
-const codeSnippet = [
-  { type: 'comment', text: '// Rick\'s Lab — microservices' },
-  { type: 'keyword', text: 'const ', suffix: { type: 'var', text: 'lab' }, end: ' = {' },
-  { type: 'indent', key: 'service', value: '"api-gateway"' },
-  { type: 'indent', key: 'auth', value: '"JWT + middleware"' },
-  { type: 'indent', key: 'stack', value: '["Go", "React", "Docker"]' },
-  { type: 'indent', key: 'next', value: '"Ollama integration"' },
-  { type: 'plain', text: '}' },
+const SERVICES = [
+  { name: 'API Gateway',   status: 'online' },
+  { name: 'User Service',  status: 'online' },
+  { name: 'PostgreSQL',    status: 'online' },
+  { name: 'Notes Service', status: 'soon' },
+  { name: 'AI Lab',        status: 'soon' },
 ]
 
-const STACK = ['Go', 'React', 'PostgreSQL', 'Redis', 'Docker', 'API Gateway', 'JWT', 'Ollama']
+const STACK = ['Go', 'React', 'PostgreSQL', 'Docker', 'Microservices', 'API Gateway', 'JWT', 'Layer Architecture', 'Unit Test', 'Integration Test']
 
 function Home({ user }) {
   return (
@@ -45,33 +43,19 @@ function Home({ user }) {
             </div>
           </div>
 
-          <div className="hero-terminal">
-            <div className="terminal-header">
-              <span className="terminal-dot dot-red" />
-              <span className="terminal-dot dot-yellow" />
-              <span className="terminal-dot dot-green" />
-              <span className="terminal-title">lab.ts</span>
+          <div className="status-card">
+            <div className="status-card-header">
+              <span className="status-card-title">Service Status</span>
+              <span className="status-card-dot" />
             </div>
-            <div className="terminal-body">
-              {codeSnippet.map((line, i) => (
-                <div className="code-line" key={i}>
-                  {line.type === 'comment' && <span className="c-comment">{line.text}</span>}
-                  {line.type === 'keyword' && (
-                    <>
-                      <span className="c-keyword">{line.text}</span>
-                      <span className="c-var">{line.suffix.text}</span>
-                      <span className="c-plain">{line.end}</span>
-                    </>
-                  )}
-                  {line.type === 'indent' && (
-                    <span className="c-indent">
-                      {'  '}<span className="c-key">{line.key}</span>
-                      <span className="c-plain">: </span>
-                      <span className="c-string">{line.value}</span>
-                      <span className="c-plain">,</span>
-                    </span>
-                  )}
-                  {line.type === 'plain' && <span className="c-plain">{line.text}</span>}
+            <div className="status-card-list">
+              {SERVICES.map(svc => (
+                <div className="status-row" key={svc.name}>
+                  <span className={`status-indicator ${svc.status === 'online' ? 'status-online' : 'status-soon'}`} />
+                  <span className="status-name">{svc.name}</span>
+                  <span className={`status-badge ${svc.status === 'online' ? 'badge-online' : 'badge-soon'}`}>
+                    {svc.status}
+                  </span>
                 </div>
               ))}
             </div>
@@ -83,7 +67,7 @@ function Home({ user }) {
       <section className="features-section">
         <div className="features-header">
           <span className="section-label">WHAT'S INSIDE</span>
-          <h2 className="section-title">Lab 裡有什麼</h2>
+          <h2 className="section-title">Lab 功能介紹</h2>
           <p className="section-desc">微服務架構的個人實驗場，持續建構中</p>
         </div>
         <div className="features-grid">
@@ -118,7 +102,7 @@ function Home({ user }) {
       <section className="stack-section">
         <div className="stack-glow" />
         <span className="section-label light">TECH STACK</span>
-        <h2 className="section-title light">建構這個 Lab 用的東西</h2>
+        <h2 className="section-title light">Rick's Lab 使用技術一覽</h2>
         <div className="stack-grid">
           {STACK.map(tech => (
             <div className="stack-chip" key={tech}>{tech}</div>

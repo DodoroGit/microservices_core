@@ -14,6 +14,7 @@ type UserRepositoryInterface interface {
 	FindByID(id string) (*models.User, error)
 	FindAll() ([]models.User, error)
 	Update(id string, username string) error
+	UpdateRole(id string, role string) error
 	Delete(id string) error
 }
 
@@ -29,11 +30,11 @@ func NewUserRepository(db *sql.DB) *UserRepository {
 
 // Create 創建用戶
 func (r *UserRepository) Create(user *models.User) error {
-	query := `INSERT INTO users (id, email, username, password)
-	          VALUES ($1, $2, $3, $4)
+	query := `INSERT INTO users (id, email, username, password, role)
+	          VALUES ($1, $2, $3, $4, $5)
 	          RETURNING created_at, updated_at`
 
-	err := r.db.QueryRow(query, user.ID, user.Email, user.Username, user.Password).
+	err := r.db.QueryRow(query, user.ID, user.Email, user.Username, user.Password, user.Role).
 		Scan(&user.CreatedAt, &user.UpdatedAt)
 
 	if err != nil {
@@ -45,11 +46,11 @@ func (r *UserRepository) Create(user *models.User) error {
 // FindByEmail 根據 email 查找用戶
 func (r *UserRepository) FindByEmail(email string) (*models.User, error) {
 	var user models.User
-	query := `SELECT id, email, username, password, created_at, updated_at
+	query := `SELECT id, email, username, password, role, created_at, updated_at
 	          FROM users WHERE email = $1`
 
 	err := r.db.QueryRow(query, email).Scan(
-		&user.ID, &user.Email, &user.Username, &user.Password,
+		&user.ID, &user.Email, &user.Username, &user.Password, &user.Role,
 		&user.CreatedAt, &user.UpdatedAt,
 	)
 
@@ -65,11 +66,11 @@ func (r *UserRepository) FindByEmail(email string) (*models.User, error) {
 // FindByID 根據 ID 查找用戶
 func (r *UserRepository) FindByID(id string) (*models.User, error) {
 	var user models.User
-	query := `SELECT id, email, username, created_at, updated_at
+	query := `SELECT id, email, username, role, created_at, updated_at
 	          FROM users WHERE id = $1`
 
 	err := r.db.QueryRow(query, id).Scan(
-		&user.ID, &user.Email, &user.Username,
+		&user.ID, &user.Email, &user.Username, &user.Role,
 		&user.CreatedAt, &user.UpdatedAt,
 	)
 
@@ -84,7 +85,7 @@ func (r *UserRepository) FindByID(id string) (*models.User, error) {
 
 // FindAll 獲取所有用戶
 func (r *UserRepository) FindAll() ([]models.User, error) {
-	query := `SELECT id, email, username, created_at, updated_at FROM users`
+	query := `SELECT id, email, username, role, created_at, updated_at FROM users`
 	rows, err := r.db.Query(query)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query users: %w", err)
@@ -94,7 +95,7 @@ func (r *UserRepository) FindAll() ([]models.User, error) {
 	var users []models.User
 	for rows.Next() {
 		var user models.User
-		err := rows.Scan(&user.ID, &user.Email, &user.Username, &user.CreatedAt, &user.UpdatedAt)
+		err := rows.Scan(&user.ID, &user.Email, &user.Username, &user.Role, &user.CreatedAt, &user.UpdatedAt)
 		if err != nil {
 			continue
 		}
@@ -110,6 +111,25 @@ func (r *UserRepository) Update(id string, username string) error {
 	result, err := r.db.Exec(query, username, id)
 	if err != nil {
 		return fmt.Errorf("failed to update user: %w", err)
+	}
+
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to get affected rows: %w", err)
+	}
+	if rows == 0 {
+		return fmt.Errorf("user not found")
+	}
+
+	return nil
+}
+
+// UpdateRole 更新用戶角色
+func (r *UserRepository) UpdateRole(id string, role string) error {
+	query := `UPDATE users SET role = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2`
+	result, err := r.db.Exec(query, role, id)
+	if err != nil {
+		return fmt.Errorf("failed to update role: %w", err)
 	}
 
 	rows, err := result.RowsAffected()

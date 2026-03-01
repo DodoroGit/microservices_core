@@ -57,6 +57,11 @@ func (m *MockUserService) UpdateUser(id string, req models.UpdateUserRequest) er
 	return args.Error(0)
 }
 
+func (m *MockUserService) UpdateRole(id string, role string) error {
+	args := m.Called(id, role)
+	return args.Error(0)
+}
+
 func (m *MockUserService) DeleteUser(id string) error {
 	args := m.Called(id)
 	return args.Error(0)

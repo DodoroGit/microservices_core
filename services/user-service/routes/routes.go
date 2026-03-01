@@ -16,5 +16,6 @@ func SetupRoutes(router *gin.Engine, userHandler *handlers.UserHandler) {
 	router.GET("/users", userHandler.GetUsers)
 	router.GET("/users/:id", userHandler.GetUser)
 	router.PUT("/users/:id", userHandler.UpdateUser)
+	router.PATCH("/users/:id/role", userHandler.UpdateRole)
 	router.DELETE("/users/:id", userHandler.DeleteUser)
 }

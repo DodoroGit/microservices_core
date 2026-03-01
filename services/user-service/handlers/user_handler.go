@@ -14,6 +14,7 @@ import (
 type Claims struct {
 	UserID string `json:"user_id"`
 	Email  string `json:"email"`
+	Role   string `json:"role"`
 	jwt.RegisteredClaims
 }
 
@@ -63,6 +64,7 @@ func (h *UserHandler) Login(c *gin.Context) {
 	claims := &Claims{
 		UserID: user.ID,
 		Email:  user.Email,
+		Role:   user.Role,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)), // 24 小時後過期
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
@@ -132,6 +134,23 @@ func (h *UserHandler) DeleteUser(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "User deleted successfully"})
+}
+
+// UpdateRole 更新用戶角色
+func (h *UserHandler) UpdateRole(c *gin.Context) {
+	id := c.Param("id")
+	var req models.UpdateRoleRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if err := h.service.UpdateRole(id, req.Role); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Role updated successfully"})
 }
 
 // Health 健康檢查

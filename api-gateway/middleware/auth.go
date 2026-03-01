@@ -13,6 +13,7 @@ import (
 type Claims struct {
 	UserID string `json:"user_id"`
 	Email  string `json:"email"`
+	Role   string `json:"role"`
 	jwt.RegisteredClaims
 }
 
@@ -64,7 +65,22 @@ func RequireAuth(jwtSecret string) gin.HandlerFunc {
 		// ── 4. 將 user_id 存入 context，後續 handler 可透過 c.GetString("user_id") 取得
 		c.Set("user_id", claims.UserID)
 		c.Set("email", claims.Email)
+		c.Set("role", claims.Role)
 
+		c.Next()
+	}
+}
+
+// RequireAdmin 檢查 context 中的 role 是否為 "admin"，否則回傳 403
+func RequireAdmin() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		role := c.GetString("role")
+		if role != "admin" {
+			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
+				"error": "權限不足，需要 admin 身份",
+			})
+			return
+		}
 		c.Next()
 	}
 }

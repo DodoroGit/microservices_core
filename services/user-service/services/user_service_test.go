@@ -49,6 +49,11 @@ func (m *MockUserRepository) Update(id string, username string) error {
 	return args.Error(0)
 }
 
+func (m *MockUserRepository) UpdateRole(id string, role string) error {
+	args := m.Called(id, role)
+	return args.Error(0)
+}
+
 func (m *MockUserRepository) Delete(id string) error {
 	args := m.Called(id)
 	return args.Error(0)

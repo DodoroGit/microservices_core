@@ -16,6 +16,7 @@ type UserServiceInterface interface {
 	GetUsers() ([]models.User, error)
 	GetUserByID(id string) (*models.User, error)
 	UpdateUser(id string, req models.UpdateUserRequest) error
+	UpdateRole(id string, role string) error
 	DeleteUser(id string) error
 }
 
@@ -52,6 +53,7 @@ func (s *UserService) Register(req models.RegisterRequest) (*models.User, error)
 		Email:    req.Email,
 		Username: req.Username,
 		Password: string(hashedPassword),
+		Role:     "user",
 	}
 
 	if err := s.repo.Create(user); err != nil {
@@ -101,6 +103,14 @@ func (s *UserService) GetUserByID(id string) (*models.User, error) {
 // UpdateUser 更新用戶
 func (s *UserService) UpdateUser(id string, req models.UpdateUserRequest) error {
 	return s.repo.Update(id, req.Username)
+}
+
+// UpdateRole 更新用戶角色
+func (s *UserService) UpdateRole(id string, role string) error {
+	if role != "admin" && role != "user" {
+		return fmt.Errorf("invalid role: must be 'admin' or 'user'")
+	}
+	return s.repo.UpdateRole(id, role)
 }
 
 // DeleteUser 刪除用戶
