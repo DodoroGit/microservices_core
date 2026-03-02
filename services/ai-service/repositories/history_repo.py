@@ -17,7 +17,7 @@ def get(user_id: str) -> list[dict]:
 
 
 def save(user_id: str, history: list[dict]) -> None:
-    _client.setex(_key(user_id), cfg.CHAT_HISTORY_TTL, json.dumps(history))
+    _client.setex(_key(user_id), cfg.CHAT_HISTORY_TTL, json.dumps(history, ensure_ascii=False))
 
 
 def delete(user_id: str) -> None:

@@ -9,7 +9,7 @@ from repositories import history_repo
 logger = logging.getLogger(__name__)
 
 
-async def chat(user_id: str, message: str) -> dict:
+async def send_message(user_id: str, message: str) -> dict:
     history = history_repo.get(user_id)
     history.append({"role": "user", "content": message})
 
@@ -34,9 +34,9 @@ async def chat(user_id: str, message: str) -> dict:
     return {"response": assistant_message, "history": history}
 
 
-def get_history(user_id: str) -> list[dict]:
+def fetch_history(user_id: str) -> list[dict]:
     return history_repo.get(user_id)
 
 
-def clear_history(user_id: str) -> None:
+def delete_history(user_id: str) -> None:
     history_repo.delete(user_id)

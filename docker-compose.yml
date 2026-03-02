@@ -54,6 +54,20 @@ services:
       timeout: 5s
       retries: 5
 
+  redisinsight:
+    image: redis/redisinsight:latest
+    container_name: redisinsight
+    ports:
+      - "5540:5540"
+    volumes:
+      - redisinsight_data:/data
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - microservices_network
+    restart: unless-stopped
+
   pgadmin:
     image: dpage/pgadmin4:latest
     container_name: pgadmin
@@ -183,3 +197,4 @@ volumes:
   redis_data:
   pgadmin_data:
   ollama_data:
+  redisinsight_data:
