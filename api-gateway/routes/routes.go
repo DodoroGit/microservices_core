@@ -12,9 +12,12 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+const aiTimeout = 120 * time.Second
+
 // Setup 將所有 middleware 與路由掛載到 Gin engine 上。
 func Setup(r *gin.Engine, cfg *config.Config) {
 	p := proxy.New()
+	aiProxy := proxy.NewWithTimeout(aiTimeout)
 
 	// ── 全域 Middleware ──────────────────────────────────────────────────────
 	r.Use(gin.Recovery()) // 攔截 panic，回傳 500，避免整個服務崩潰
@@ -53,6 +56,15 @@ func Setup(r *gin.Engine, cfg *config.Config) {
 		protected.GET("/users/:id", p.Forward(cfg.UserServiceURL, "/api"))
 		protected.PUT("/users/:id", p.Forward(cfg.UserServiceURL, "/api"))
 		protected.DELETE("/users/:id", p.Forward(cfg.UserServiceURL, "/api"))
+	}
+
+	// AI Service 路由：需要登入，120 秒 timeout（LLM 推理較慢）
+	ai := r.Group("/api/ai")
+	ai.Use(middleware.RequireAuth(cfg.JWTSecret))
+	{
+		ai.POST("/chat", aiProxy.Forward(cfg.AIServiceURL, "/api/ai"))
+		ai.GET("/chat/history", aiProxy.Forward(cfg.AIServiceURL, "/api/ai"))
+		ai.DELETE("/chat/history", aiProxy.Forward(cfg.AIServiceURL, "/api/ai"))
 	}
 
 	// Admin-only 路由：需要 admin 角色

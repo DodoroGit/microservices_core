@@ -22,6 +22,13 @@ func New() *Proxy {
 	}
 }
 
+// NewWithTimeout 建立一個自訂 timeout 的 Proxy，用於回應較慢的服務（如 LLM）
+func NewWithTimeout(timeout time.Duration) *Proxy {
+	return &Proxy{
+		client: &http.Client{Timeout: timeout},
+	}
+}
+
 // Forward 回傳一個 Gin handler，將收到的請求轉發到 targetBaseURL，
 // 並在轉發前將 pathPrefix 從路徑中去除。
 //

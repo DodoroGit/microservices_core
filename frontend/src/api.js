@@ -17,6 +17,15 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+export const aiAPI = {
+  sendMessage: (message, userId) =>
+    api.post('/api/ai/chat', { message, user_id: userId }),
+  getHistory: (userId) =>
+    api.get('/api/ai/chat/history', { params: { user_id: userId } }),
+  clearHistory: (userId) =>
+    api.delete('/api/ai/chat/history', { params: { user_id: userId } }),
+}
+
 export const userAPI = {
   register: (userData) => api.post('/api/users/register', userData),
   login: (credentials) => api.post('/api/users/login', credentials),

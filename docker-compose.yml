@@ -97,6 +97,47 @@ services:
       - microservices_network
     restart: unless-stopped
 
+  # Ollama — 本地 LLM runtime
+  ollama:
+    image: ollama/ollama
+    container_name: ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - microservices_network
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    restart: unless-stopped
+
+  # AI Service
+  ai-service:
+    build:
+      context: ./services/ai-service
+      dockerfile: Dockerfile
+    container_name: ai_service
+    environment:
+      - OLLAMA_URL=http://ollama:11434
+      - MODEL_NAME=llama3.2:3b
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    ports:
+      - "8082:8082"
+    depends_on:
+      redis:
+        condition: service_healthy
+      ollama:
+        condition: service_started
+    networks:
+      - microservices_network
+    restart: unless-stopped
+
   # API Gateway
   api-gateway:
     build:
@@ -106,10 +147,12 @@ services:
     environment:
       - PORT=8080
       - USER_SERVICE_URL=http://user-service:8081
+      - AI_SERVICE_URL=http://ai-service:8082
     ports:
       - "8080:8080"
     depends_on:
       - user-service
+      - ai-service
     networks:
       - microservices_network
     restart: unless-stopped
@@ -139,3 +182,4 @@ volumes:
   mongodb_data:
   redis_data:
   pgadmin_data:
+  ollama_data:

@@ -51,7 +51,7 @@ function App() {
             } />
             <Route path="/ai" element={
               <ProtectedRoute user={user}>
-                <AILab />
+                <AILab user={user} />
               </ProtectedRoute>
             } />
           </Routes>

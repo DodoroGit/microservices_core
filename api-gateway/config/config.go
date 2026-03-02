@@ -7,6 +7,7 @@ type Config struct {
 	Port           string
 	JWTSecret      string
 	UserServiceURL string
+	AIServiceURL   string
 }
 
 // Load 從環境變數讀取設定，若未設定則使用預設值。
@@ -15,6 +16,7 @@ func Load() *Config {
 		Port:           getEnv("PORT", "8080"),
 		JWTSecret:      getEnv("JWT_SECRET", "dev-secret-change-in-production"),
 		UserServiceURL: getEnv("USER_SERVICE_URL", "http://localhost:8081"),
+		AIServiceURL:   getEnv("AI_SERVICE_URL", "http://localhost:8082"),
 	}
 }
 

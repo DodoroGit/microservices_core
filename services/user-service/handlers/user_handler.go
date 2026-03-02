@@ -66,7 +66,7 @@ func (h *UserHandler) Login(c *gin.Context) {
 		Email:  user.Email,
 		Role:   user.Role,
 		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)), // 24 小時後過期
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour)), // 1 小時後過期
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 		},
 	}
