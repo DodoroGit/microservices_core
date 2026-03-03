@@ -6,7 +6,7 @@ const SERVICES = [
   { name: 'User Service',  status: 'online' },
   { name: 'PostgreSQL',    status: 'online' },
   { name: 'Notes Service', status: 'soon' },
-  { name: 'AI Lab',        status: 'soon' },
+  { name: 'AI Lab',        status: 'online' },
 ]
 
 const STACK = ['Go', 'React', 'PostgreSQL', 'Docker', 'Microservices', 'API Gateway', 'JWT', 'Layer Architecture', 'Unit Test', 'Integration Test']
