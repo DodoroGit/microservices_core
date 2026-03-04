@@ -26,6 +26,15 @@ export const aiAPI = {
     api.delete('/api/ai/chat/history', { params: { user_id: userId } }),
 }
 
+export const noteAPI = {
+  getNotes: (category) =>
+    api.get('/api/notes', { params: category ? { category } : {} }),
+  getNote: (id) => api.get(`/api/notes/${id}`),
+  createNote: (data) => api.post('/api/notes', data),
+  updateNote: (id, data) => api.put(`/api/notes/${id}`, data),
+  deleteNote: (id) => api.delete(`/api/notes/${id}`),
+}
+
 export const userAPI = {
   register: (userData) => api.post('/api/users/register', userData),
   login: (credentials) => api.post('/api/users/login', credentials),

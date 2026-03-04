@@ -67,11 +67,22 @@ func Setup(r *gin.Engine, cfg *config.Config) {
 		ai.DELETE("/chat/history", aiProxy.Forward(cfg.AIServiceURL, "/api/ai"))
 	}
 
+	// Note Service 路由 - 所有登入用戶可讀
+	notes := r.Group("/api")
+	notes.Use(middleware.RequireAuth(cfg.JWTSecret))
+	{
+		notes.GET("/notes", p.Forward(cfg.NoteServiceURL, "/api"))
+		notes.GET("/notes/:id", p.Forward(cfg.NoteServiceURL, "/api"))
+	}
+
 	// Admin-only 路由：需要 admin 角色
 	admin := r.Group("/api")
 	admin.Use(middleware.RequireAuth(cfg.JWTSecret))
 	admin.Use(middleware.RequireAdmin())
 	{
 		admin.PATCH("/users/:id/role", p.Forward(cfg.UserServiceURL, "/api"))
+		admin.POST("/notes", p.Forward(cfg.NoteServiceURL, "/api"))
+		admin.PUT("/notes/:id", p.Forward(cfg.NoteServiceURL, "/api"))
+		admin.DELETE("/notes/:id", p.Forward(cfg.NoteServiceURL, "/api"))
 	}
 }

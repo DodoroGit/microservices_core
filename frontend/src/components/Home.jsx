@@ -4,12 +4,20 @@ import { Link } from 'react-router-dom'
 const SERVICES = [
   { name: 'API Gateway',   status: 'online' },
   { name: 'User Service',  status: 'online' },
-  { name: 'PostgreSQL',    status: 'online' },
-  { name: 'Notes Service', status: 'soon' },
-  { name: 'AI Lab',        status: 'online' },
+  { name: 'Note Service',  status: 'online' },
+  { name: 'AI Service',    status: 'online' },
+  { name: 'Ollama LLM',    status: 'online' },
 ]
 
-const STACK = ['Go', 'React', 'PostgreSQL', 'Docker', 'Microservices', 'API Gateway', 'JWT', 'Layer Architecture', 'Unit Test', 'Integration Test']
+const STACK = [
+  { label: '後端',   chips: ['Go', 'Python', 'Gin', 'FastAPI'] },
+  { label: '前端',   chips: ['React', 'Vite', 'Nginx'] },
+  { label: '資料庫', chips: ['PostgreSQL', 'MongoDB', 'Redis'] },
+  { label: '基礎設施', chips: ['Docker', 'Docker Compose'] },
+  { label: 'AI',    chips: ['Ollama', 'Llama 3.2'] },
+  { label: '認證',   chips: ['JWT', 'RBAC'] },
+  { label: '測試',   chips: ['Unit Test', 'Integration Test'] },
+]
 
 function Home({ user }) {
   return (
@@ -83,9 +91,9 @@ function Home({ user }) {
             <div className="feature-icon-wrap icon-purple">
               <span>📝</span>
             </div>
-            <h3>技術筆記</h3>
-            <p>記錄每天學習的技術筆記、做過的專案，以及每日閱讀的內容整理。</p>
-            <div className="feature-tag tag-soon">Coming Soon</div>
+            <h3>筆記空間</h3>
+            <p>記錄技術筆記、專案進度與日常隨筆，依分類整理、隨時查閱。</p>
+            <div className="feature-tag">上線中</div>
           </div>
           <div className="feature-card">
             <div className="feature-icon-wrap icon-cyan">
@@ -93,7 +101,7 @@ function Home({ user }) {
             </div>
             <h3>AI Lab</h3>
             <p>整合本地 Ollama 模型，在自己的 server 上跑 LLM，完全掌控資料。</p>
-            <div className="feature-tag tag-soon">Coming Soon</div>
+            <div className="feature-tag">上線中</div>
           </div>
         </div>
       </section>
@@ -103,9 +111,16 @@ function Home({ user }) {
         <div className="stack-glow" />
         <span className="section-label light">TECH STACK</span>
         <h2 className="section-title light">Rick's Lab 使用技術一覽</h2>
-        <div className="stack-grid">
-          {STACK.map(tech => (
-            <div className="stack-chip" key={tech}>{tech}</div>
+        <div className="stack-groups">
+          {STACK.map(group => (
+            <div className="stack-group" key={group.label}>
+              <span className="stack-group-label">{group.label}</span>
+              <div className="stack-group-chips">
+                {group.chips.map(chip => (
+                  <div className="stack-chip" key={chip}>{chip}</div>
+                ))}
+              </div>
+            </div>
           ))}
         </div>
       </section>

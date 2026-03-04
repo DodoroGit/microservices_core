@@ -54,6 +54,23 @@ services:
       timeout: 5s
       retries: 5
 
+  mongo-express:
+    image: mongo-express:latest
+    container_name: mongo_express
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: admin
+      ME_CONFIG_MONGODB_ADMINPASSWORD: admin123
+      ME_CONFIG_MONGODB_URL: mongodb://admin:admin123@mongodb:27017/
+      ME_CONFIG_BASICAUTH: false
+    ports:
+      - "8090:8081"
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - microservices_network
+    restart: unless-stopped
+
   redisinsight:
     image: redis/redisinsight:latest
     container_name: redisinsight
@@ -152,6 +169,24 @@ services:
       - microservices_network
     restart: unless-stopped
 
+  # Note Service
+  note-service:
+    build:
+      context: ./services/note-service
+      dockerfile: Dockerfile
+    container_name: note_service
+    environment:
+      - MONGODB_URL=mongodb://admin:admin123@mongodb:27017
+      - MONGODB_DB=notedb
+    ports:
+      - "8083:8083"
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - microservices_network
+    restart: unless-stopped
+
   # API Gateway
   api-gateway:
     build:
@@ -162,11 +197,13 @@ services:
       - PORT=8080
       - USER_SERVICE_URL=http://user-service:8081
       - AI_SERVICE_URL=http://ai-service:8082
+      - NOTE_SERVICE_URL=http://note-service:8083
     ports:
       - "8080:8080"
     depends_on:
       - user-service
       - ai-service
+      - note-service
     networks:
       - microservices_network
     restart: unless-stopped

@@ -42,7 +42,7 @@ user-service 是目前架構實驗的主要場域：
 
 - **Layered Architecture**：Handler → Service → Repository，各層職責分明
 - **Interface 抽象**：每層依賴 interface 而非具體實作，達到 DI 解耦
-- **Unit Test**：Handler 層以 Mock（手寫 Mock）隔離 Service 依賴，純邏輯驗證
+- **Unit Test**：Handler 層以 Mock 隔離 Service 依賴，純邏輯驗證
 - **Integration Test**：Repository 層連接真實 PostgreSQL，以 build tag（`//go:build integration`）區隔，CI 中獨立運行
 
 ```

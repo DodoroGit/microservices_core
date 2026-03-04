@@ -78,8 +78,8 @@ function AILab({ user }) {
           {messages.length === 0 && !loading && (
             <div className="chat-empty">
               <div className="chat-empty-icon">🤖</div>
-              <p>開始和 AI 對話吧</p>
-              <span>支援中文 · 對話紀錄會自動儲存 24 小時</span>
+              <p style={{ color: '#000' }}>開始和 AI 對話吧</p>
+              <span style={{ color: '#000' }}>支援中文 · 對話紀錄會自動儲存 24 小時</span>
             </div>
           )}
 
