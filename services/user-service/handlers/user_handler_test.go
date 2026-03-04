@@ -313,7 +313,7 @@ func TestHealthHandler(t *testing.T) {
 	assert.Equal(t, http.StatusOK, w.Code)
 
 	var response map[string]string
-	json.Unmarshal(w.Body.Bytes(), &response)
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &response))
 	assert.Equal(t, "healthy", response["status"])
 	assert.Equal(t, "user-service", response["service"])
 }
