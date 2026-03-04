@@ -11,6 +11,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 	"user-service/models"
 )
 
@@ -111,7 +112,7 @@ func TestRegisterHandler(t *testing.T) {
 
 		assert.Equal(t, http.StatusCreated, w.Code)
 		var resp models.User
-		json.Unmarshal(w.Body.Bytes(), &resp)
+		require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
 		assert.Equal(t, "test@example.com", resp.Email)
 		mockSvc.AssertExpectations(t)
 	})
@@ -182,7 +183,7 @@ func TestLoginHandler(t *testing.T) {
 
 		assert.Equal(t, http.StatusOK, w.Code)
 		var resp models.LoginResponse
-		json.Unmarshal(w.Body.Bytes(), &resp)
+		require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
 		assert.Equal(t, "Login successful", resp.Message)
 		mockSvc.AssertExpectations(t)
 	})
@@ -242,7 +243,7 @@ func TestGetUserHandler(t *testing.T) {
 
 		assert.Equal(t, http.StatusOK, w.Code)
 		var resp models.User
-		json.Unmarshal(w.Body.Bytes(), &resp)
+		require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
 		assert.Equal(t, "abc-123", resp.ID)
 		mockSvc.AssertExpectations(t)
 	})
