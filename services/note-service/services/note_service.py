@@ -1,11 +1,21 @@
+from typing import Protocol
+
 from fastapi import HTTPException
 
 from models.schemas import NoteCreate, NoteUpdate
-from repositories.note_repository import NoteRepository
+from repositories.note_repository import NoteRepositoryProtocol
+
+
+class NoteServiceProtocol(Protocol):
+    async def get_all(self, category: str | None = None) -> list[dict]: ...
+    async def get_by_id(self, note_id: str) -> dict: ...
+    async def create(self, data: NoteCreate) -> dict: ...
+    async def update(self, note_id: str, data: NoteUpdate) -> dict: ...
+    async def delete(self, note_id: str) -> None: ...
 
 
 class NoteService:
-    def __init__(self, repo: NoteRepository):
+    def __init__(self, repo: NoteRepositoryProtocol):
         self._repo = repo
 
     async def get_all(self, category: str | None = None) -> list[dict]:

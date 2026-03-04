@@ -1,7 +1,16 @@
 from datetime import datetime, timezone
+from typing import Protocol
 
 from bson import ObjectId
 from motor.motor_asyncio import AsyncIOMotorCollection
+
+
+class NoteRepositoryProtocol(Protocol):
+    async def find_all(self, category: str | None = None) -> list[dict]: ...
+    async def find_by_id(self, note_id: str) -> dict | None: ...
+    async def create(self, data: dict) -> dict: ...
+    async def update(self, note_id: str, data: dict) -> dict | None: ...
+    async def delete(self, note_id: str) -> bool: ...
 
 
 class NoteRepository:
