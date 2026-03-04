@@ -1,55 +1,111 @@
 # Microservices Core
 
-這是一個學習用的個人專案，目的是透過實作來深入理解**微服務架構**與各種後端設計模式。
+這是一個學習用的個人專案，目的是透過實作深入理解**微服務架構**與後端設計模式。
 
 比起功能本身，更在意的是把這裡當作一個**技術實驗站**——把每個學過的概念都落地成可以跑起來的程式。
 
-## 學習目標
+---
 
-- 理解微服務架構的設計思路與各層職責
-- 實踐 Dependency Injection（依賴注入），透過 interface 抽象達到模組解耦
-- 讓 Unit Test 能夠優雅地進入專案，並區分 Unit / Integration Test 的職責
-- 探索服務間通訊協定（RESTful → gRPC）的選擇與取捨
-
-## 架構
+## 架構總覽
 
 ```
-Frontend (React + Vite)
+Frontend (React + Vite + Nginx)
     ↓ RESTful
 API Gateway (Go / Gin)
-    ↓ RESTful（目前）→ 規劃改為 gRPC
+    ├── JWT 驗證 / CORS / 反向代理
+    └── RBAC（Admin / User）
+    ↓ RESTful
 Backend Services
-    ├── user-service  (Go)
-    └── ai-service    (Python / FastAPI)
-         ↓
-      Ollama (llama3.2:3b)
-Databases
-    ├── PostgreSQL  (user-service)
-    ├── MongoDB     (預留擴展)
-    └── Redis       (ai-service chat history)
+    ├── user-service   (Go + Gin)          → PostgreSQL
+    ├── note-service   (Python + FastAPI)  → MongoDB
+    └── ai-service     (Python + FastAPI)  → Redis + Ollama
 ```
 
 | 組件 | 技術 | 說明 |
 |---|---|---|
-| Frontend | React + Vite | Login / Register / Dashboard / AI Lab / Notes（進行中）|
-| API Gateway | Go + Gin | 對外統一入口，負責路由轉發與 JWT 驗證 |
-| user-service | Go + Gin + PostgreSQL | 使用者管理，含 Admin / User 角色權限 |
-| ai-service | Python + FastAPI + Redis | 串接 Ollama 本地 LLM，提供 Chat API |
+| Frontend | React + Vite + Nginx | Login / Register / Dashboard / AI Lab / Notes |
+| API Gateway | Go + Gin | 統一入口，JWT 驗證、CORS、RBAC 權限控制 |
+| user-service | Go + Gin + PostgreSQL | 使用者管理，Admin / User 角色 |
+| note-service | Python + FastAPI + MongoDB | 筆記 CRUD，依分類（專案 / 技術筆記 / 日常隨筆）篩選 |
+| ai-service | Python + FastAPI + Redis | 串接 Ollama 本地 LLM，對話歷史存於 Redis |
 
-## 設計模式實踐（user-service）
+---
 
-user-service 是目前架構實驗的主要場域：
+## 設計模式實踐
 
-- **Layered Architecture**：Handler → Service → Repository，各層職責分明
-- **Interface 抽象**：每層依賴 interface 而非具體實作，達到 DI 解耦
-- **Unit Test**：Handler 層以 Mock 隔離 Service 依賴，純邏輯驗證
-- **Integration Test**：Repository 層連接真實 PostgreSQL，以 build tag（`//go:build integration`）區隔，CI 中獨立運行
+### Layered Architecture + Dependency Injection
+
+三個後端服務皆實踐相同的分層架構，各層依賴抽象而非具體實作。
+
+**Go（user-service）**
 
 ```
-Handler     → 依賴 UserServiceInterface
-Service     → 依賴 UserRepositoryInterface
-Repository  → 操作 PostgreSQL
+Handler  →  UserServiceInterface（interface）
+Service  →  UserRepositoryInterface（interface）
+Repository  →  PostgreSQL
 ```
+
+- Go 的 `interface` 為結構化型別，不需要明確宣告實作
+- `main.go` 負責組裝整條依賴鏈（Repository → Service → Handler → Router）
+
+**Python（note-service / ai-service）**
+
+```
+Router  →  NoteServiceProtocol（Protocol）
+Service →  NoteRepositoryProtocol（Protocol）
+Repository  →  MongoDB / Redis
+```
+
+- Python 以 `typing.Protocol` 作為 interface 的等價物，同樣為結構化型別
+- FastAPI 的 `Depends()` 取代 Go 的手動組裝，由框架在每個 request 進來時自動注入
+- Protocol 定義在各自層的檔案頂部（實作 class 的正上方）
+
+---
+
+## 測試策略
+
+三個服務皆區分 Unit Test 與 Integration Test：
+
+| | Unit Test | Integration Test |
+|---|---|---|
+| **Go** | Mock interface（testify/mock） | 真實 DB，build tag `//go:build integration` |
+| **Python** | Fake class / AsyncMock | 真實 DB，`@pytest.mark.integration` |
+
+**各層測試對象：**
+
+```
+Repository 層  →  mock DB driver（AsyncMock / MagicMock）
+Service 層     →  Fake Repository（in-memory）
+Router / Handler 層  →  Fake Service + TestClient（FastAPI）/ httptest（Go）
+```
+
+```bash
+# Python
+pytest -v                  # 只跑 Unit Test
+pytest -v -m integration   # 只跑 Integration Test（需啟動對應 DB）
+
+# Go
+go test ./...                          # Unit Test
+go test ./... -tags integration        # Integration Test
+```
+
+---
+
+## CI/CD
+
+GitHub Actions 三條 Pipeline，各自對應一個服務：
+
+| Pipeline | Lint | Unit Test | Integration Test |
+|---|---|---|---|
+| user-service | golangci-lint | ✓ | PostgreSQL container |
+| note-service | ruff | ✓ | MongoDB container |
+| ai-service | ruff | ✓ | Redis container |
+
+執行順序：`lint → unit-test → integration-test`（前一階段失敗則停止）
+
+note-service / ai-service 的 Pipeline 設有 `paths` 過濾，只有對應目錄異動時才觸發。
+
+---
 
 ## 通訊協定
 
@@ -59,28 +115,34 @@ Repository  → 操作 PostgreSQL
 | API Gateway → Backend Services | RESTful | gRPC |
 | Service → Service | - | gRPC |
 
-> ai-service 使用 Ollama 本地推論，原因是本地端運算資源有限，以 llama3.2:3b 輕量模型為主。
+---
 
-## CI/CD
+## 技術一覽
 
-GitHub Actions 自動化流程：
+| 類別 | 技術 |
+|---|---|
+| 後端 | Go、Python、Gin、FastAPI |
+| 前端 | React、Vite、Nginx |
+| 資料庫 | PostgreSQL、MongoDB、Redis |
+| 基礎設施 | Docker、Docker Compose |
+| AI | Ollama、Llama 3.2 |
+| 認證 | JWT、RBAC |
+| 測試 | Unit Test、Integration Test |
+| Lint | golangci-lint（Go）、ruff（Python）|
+| CI/CD | GitHub Actions |
 
-- **Unit Tests**：push / PR 時自動觸發，不依賴任何外部資源
-- **Integration Tests**：Unit Tests 通過後才執行，起動 PostgreSQL service container 進行完整驗證
+---
 
 ## 目前進度
 
 **已完成**
-- [x] user-service 完整架構（Handler / Service / Repository + Interface + DI）
-- [x] user-service Unit Test（Mock-based Handler Test）
-- [x] user-service Integration Test（真實 DB，build tag 隔離）
-- [x] API Gateway（HTTP reverse proxy + JWT 驗證 + CORS）
-- [x] ai-service（FastAPI + Ollama + Redis chat history）
-- [x] 前端介面（Login / Register / Dashboard / AI Lab）
-- [x] Docker Compose 整合（PostgreSQL、MongoDB、Redis、Ollama、healthcheck）
-- [x] GitHub Actions CI Pipeline（Unit + Integration Test 分層執行）
+- [x] user-service — Layered Architecture + Interface + DI + Unit / Integration Test
+- [x] note-service — Layered Architecture + Protocol + DI + Unit / Integration Test
+- [x] ai-service — Layered Architecture + Protocol + DI + Unit / Integration Test
+- [x] API Gateway — HTTP reverse proxy + JWT 驗證 + CORS + RBAC
+- [x] 前端介面 — Login / Register / Dashboard / AI Lab / Notes
+- [x] Docker Compose — 含 healthcheck，一鍵啟動全服務
+- [x] GitHub Actions CI — Lint + Unit + Integration，三服務各自獨立 Pipeline
 
-**進行中 / 規劃中**
-- [ ] Notes 功能（前端頁面已建，後端 service 尚未實作）
+**規劃中**
 - [ ] 服務間通訊改為 gRPC
-- [ ] ai-service 設計模式完善（對齊 user-service 架構）
