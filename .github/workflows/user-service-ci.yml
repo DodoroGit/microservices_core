@@ -7,8 +7,33 @@ on:
     branches: [main]
 
 jobs:
+  lint:
+    name: Lint (user-service)
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: services/user-service
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: services/user-service/go.mod
+          cache-dependency-path: services/user-service/go.sum
+
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: latest
+          working-directory: services/user-service
+
   unit-test:
     name: Unit Tests (user-service)
+    needs: lint
     runs-on: ubuntu-latest
 
     defaults:

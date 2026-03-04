@@ -1,16 +1,23 @@
 import logging
+from typing import Protocol
 
 import httpx
 from fastapi import HTTPException
 
 from config import cfg
-from repositories.history_repo import HistoryRepository
+from repositories.history_repo import HistoryRepositoryProtocol
 
 logger = logging.getLogger(__name__)
 
 
+class ChatServiceProtocol(Protocol):
+    async def send_message(self, user_id: str, message: str) -> dict: ...
+    def fetch_history(self, user_id: str) -> list[dict]: ...
+    def delete_history(self, user_id: str) -> None: ...
+
+
 class ChatService:
-    def __init__(self, repo: HistoryRepository):
+    def __init__(self, repo: HistoryRepositoryProtocol):
         self._repo = repo
 
     async def send_message(self, user_id: str, message: str) -> dict:

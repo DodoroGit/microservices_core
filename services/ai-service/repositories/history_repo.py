@@ -1,8 +1,15 @@
 import json
+from typing import Protocol
 
 import redis
 
 from config import cfg
+
+
+class HistoryRepositoryProtocol(Protocol):
+    def get(self, user_id: str) -> list[dict]: ...
+    def save(self, user_id: str, history: list[dict]) -> None: ...
+    def delete(self, user_id: str) -> None: ...
 
 
 class HistoryRepository:
