@@ -2,7 +2,7 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, Query
 
-from dependencies import get_note_service
+from routers.dependencies import get_note_service
 from models.schemas import NoteCreate, NoteResponse, NoteUpdate
 from services.note_service import NoteService
 
