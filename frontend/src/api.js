@@ -19,12 +19,10 @@ api.interceptors.request.use((config) => {
 });
 
 export const aiAPI = {
-  sendMessage: (message, userId) =>
-    api.post('/api/ai/chat', { message, user_id: userId }),
-  getHistory: (userId) =>
-    api.get('/api/ai/chat/history', { params: { user_id: userId } }),
-  clearHistory: (userId) =>
-    api.delete('/api/ai/chat/history', { params: { user_id: userId } }),
+  generateBackground: () => api.post('/api/ai/background'),
+  generateProjects: () => api.post('/api/ai/projects'),
+  generateSkills: () => api.post('/api/ai/skills'),
+  generateDaily: () => api.post('/api/ai/daily'),
 }
 
 export const noteAPI = {

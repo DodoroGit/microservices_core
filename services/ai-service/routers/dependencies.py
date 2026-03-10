@@ -1,8 +1,10 @@
-from core.cache import redis_client
-from repositories.history_repo import HistoryRepository
-from services.chat_service import ChatService, ChatServiceProtocol
+from config import settings
+from repositories.note_client import NoteClient
+from repositories.claude_client import ClaudeClient
+from services.ai_service import AIService, AIServiceProtocol
 
 
-def get_chat_service() -> ChatServiceProtocol:
-    repo = HistoryRepository(redis_client)
-    return ChatService(repo)
+def get_ai_service() -> AIServiceProtocol:
+    note_client = NoteClient(settings.note_service_url)
+    claude_client = ClaudeClient(settings.anthropic_api_key, settings.claude_model)
+    return AIService(note_client, claude_client)

@@ -1,12 +1,15 @@
 import os
 
 
-class Config:
-    OLLAMA_URL: str = os.getenv("OLLAMA_URL", "http://ollama:11434")
-    MODEL_NAME: str = os.getenv("MODEL_NAME", "llama3.2:3b")
-    REDIS_HOST: str = os.getenv("REDIS_HOST", "redis")
-    REDIS_PORT: int = int(os.getenv("REDIS_PORT", "6379"))
-    CHAT_HISTORY_TTL: int = 60 * 60 * 24  # 24 小時
+def get_env(key: str, default: str = "") -> str:
+    return os.getenv(key, default)
 
 
-cfg = Config()
+class Settings:
+    port: int = int(get_env("PORT", "8082"))
+    note_service_url: str = get_env("NOTE_SERVICE_URL", "http://localhost:8083")
+    anthropic_api_key: str = get_env("ANTHROPIC_API_KEY", "")
+    claude_model: str = get_env("CLAUDE_MODEL", "claude-sonnet-4-6")
+
+
+settings = Settings()

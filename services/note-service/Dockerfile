@@ -1,10 +1,29 @@
-FROM python:3.11-slim
+# Build stage
+FROM golang:1.21-alpine AS builder
 
 WORKDIR /app
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Copy go mod files
+COPY go.mod ./
 
+# Copy source code
 COPY . .
 
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8083"]
+# Download dependencies and build
+RUN go mod tidy && \
+    go mod download && \
+    CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main .
+
+# Run stage
+FROM alpine:latest
+
+RUN apk --no-cache add ca-certificates
+
+WORKDIR /root/
+
+# Copy the binary from builder
+COPY --from=builder /app/main .
+
+EXPOSE 8083
+
+CMD ["./main"]

@@ -67,9 +67,11 @@ func Setup(r *gin.Engine, cfg *config.Config) {
 	ai := r.Group("/api/ai")
 	ai.Use(middleware.RequireAuth(cfg.JWTSecret))
 	{
-		ai.POST("/chat", aiProxy.Forward(cfg.AIServiceURL, "/api/ai"))
-		ai.GET("/chat/history", aiProxy.Forward(cfg.AIServiceURL, "/api/ai"))
-		ai.DELETE("/chat/history", aiProxy.Forward(cfg.AIServiceURL, "/api/ai"))
+		ai.POST("/background", aiProxy.Forward(cfg.AIServiceURL, "/api"))
+		ai.POST("/projects", aiProxy.Forward(cfg.AIServiceURL, "/api"))
+		ai.POST("/skills", aiProxy.Forward(cfg.AIServiceURL, "/api"))
+		ai.POST("/daily", aiProxy.Forward(cfg.AIServiceURL, "/api"))
+		ai.POST("/project-story", aiProxy.Forward(cfg.AIServiceURL, "/api"))
 	}
 
 	// Note Service 路由 - 所有登入用戶可讀

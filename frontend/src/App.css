@@ -692,6 +692,51 @@ body {
   font-size: 11px; color: var(--text-2); margin-top: auto;
 }
 
+/* 卡片內的各類別元素 */
+.note-card-title-row {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 8px;
+}
+.note-year {
+  font-size: 12px; color: var(--text-2); white-space: nowrap; flex-shrink: 0;
+}
+.note-subtitle {
+  font-size: 12px; color: var(--text-2); margin: 0;
+}
+.note-period {
+  font-size: 11px; color: var(--text-2); margin: 0;
+}
+.note-github {
+  font-size: 11px; color: #a78bfa; text-decoration: none; margin-top: 4px; display: inline-block;
+}
+.note-github:hover { text-decoration: underline; }
+.note-tag-row {
+  display: flex; flex-wrap: wrap; gap: 5px; margin-top: 4px;
+}
+.note-tag {
+  font-size: 10px; font-weight: 500; color: #c4b5fd;
+  background: rgba(124,58,237,0.12); border: 1px solid rgba(124,58,237,0.25);
+  padding: 2px 8px; border-radius: 20px;
+}
+
+/* 詳細 modal 欄位 */
+.note-detail-fields {
+  padding: 16px 28px; display: flex; flex-direction: column; gap: 16px; overflow-y: auto; flex: 1;
+}
+.note-detail-field {
+  display: flex; flex-direction: column; gap: 4px;
+}
+.field-label {
+  font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.07em; color: #a78bfa;
+}
+.field-value {
+  font-size: 14px; color: #3f3f46; line-height: 1.7;
+  margin: 0; white-space: pre-wrap;
+}
+.note-detail-field a {
+  font-size: 13px; color: #a78bfa; word-break: break-all;
+}
+
 /* Note detail modal */
 .note-detail-modal {
   max-width: 820px; width: 92%; max-height: 82vh;
@@ -1020,4 +1065,141 @@ body {
   border: 1px solid rgba(34,197,94,0.25);
   border-radius: var(--radius-sm);
   padding: 10px 14px; color: #4ade80; font-size: 13px;
+}
+
+/* ══ AI Lab ══════════════════════════════════════ */
+.ailab-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
+  gap: 20px;
+  padding: 28px 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* ── 功能卡片 ── */
+.aicard {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.aicard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 20px 20px 0;
+  gap: 12px;
+}
+
+.aicard-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-1);
+  margin: 0 0 4px;
+}
+
+.aicard-subtitle {
+  font-size: 11px;
+  color: #a78bfa;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+}
+
+.aicard-btn {
+  padding: 8px 18px;
+  font-size: 13px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.aicard-desc {
+  font-size: 13px;
+  color: var(--text-2);
+  line-height: 1.6;
+  margin: 12px 20px 16px;
+}
+
+/* ── 載入動畫 ── */
+.ailab-loading {
+  display: flex;
+  justify-content: center;
+  padding: 20px 0;
+}
+
+.ailab-loading-dots {
+  display: flex;
+  gap: 6px;
+}
+.ailab-loading-dots span {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: #7c3aed;
+  animation: bounce 1.2s infinite;
+}
+.ailab-loading-dots span:nth-child(2) { animation-delay: 0.2s; }
+.ailab-loading-dots span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes bounce {
+  0%, 80%, 100% { transform: scale(0.7); opacity: 0.5; }
+  40% { transform: scale(1); opacity: 1; }
+}
+
+/* ── 結果區塊 ── */
+.aicard-result {
+  border-top: 1px solid var(--border);
+  margin-top: 4px;
+}
+
+.aicard-result-meta {
+  font-size: 11px;
+  color: var(--text-3);
+  padding: 10px 20px;
+  background: rgba(124,58,237,0.06);
+  border-bottom: 1px solid var(--border);
+}
+
+.ailab-result-section {
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border);
+}
+.ailab-result-section.last { border-bottom: none; }
+
+.ailab-section-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #a78bfa;
+  margin-bottom: 8px;
+}
+
+.ailab-section-content {
+  font-size: 13px;
+  color: var(--text-1);
+  line-height: 1.7;
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.ailab-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.ailab-tag {
+  font-size: 11px;
+  font-weight: 500;
+  color: #c4b5fd;
+  background: rgba(124,58,237,0.15);
+  border: 1px solid rgba(124,58,237,0.3);
+  padding: 3px 10px;
+  border-radius: 20px;
+}
+
+@media (max-width: 600px) {
+  .ailab-grid { grid-template-columns: 1fr; padding: 16px; }
 }
