@@ -4,10 +4,6 @@ import anthropic
 
 
 class ClaudeClientProtocol(Protocol):
-    async def generate_project_story(
-        self, project_title: str, notes: list[dict]
-    ) -> dict: ...
-
     async def generate_background(self, notes: list[dict]) -> dict: ...
     async def generate_projects_overview(self, notes: list[dict]) -> dict: ...
     async def generate_skills(self, notes: list[dict]) -> dict: ...
@@ -16,38 +12,6 @@ class ClaudeClientProtocol(Protocol):
 
 class ClaudeClient:
     """透過 Anthropic SDK 呼叫 Claude API，使用 tool use 取得結構化輸出"""
-
-    # ── 舊版工具（保留相容性）──────────────────────────────────────────────
-    _TOOL_PROJECT_STORY = {
-        "name": "generate_project_story",
-        "description": "根據開發筆記產生專業的履歷與面試素材",
-        "input_schema": {
-            "type": "object",
-            "properties": {
-                "resume_description": {
-                    "type": "string",
-                    "description": (
-                        "2～3 句話的 STAR 格式專案描述（繁體中文），"
-                        "適合直接放入履歷。"
-                        "涵蓋：面對的問題(S/T)、採取的行動(A)、達成的成果(R)。"
-                    ),
-                },
-                "tech_keywords": {
-                    "type": "array",
-                    "items": {"type": "string"},
-                    "description": "從筆記中提取的技術關鍵字清單（例如：Go, MongoDB, Docker）",
-                },
-                "interview_story": {
-                    "type": "string",
-                    "description": (
-                        "3～4 句話的面試故事（繁體中文），"
-                        "說明這個專案的挑戰、你的決策思路與學到的東西。"
-                    ),
-                },
-            },
-            "required": ["resume_description", "tech_keywords", "interview_story"],
-        },
-    }
 
     # ── 個人背景介紹工具 ────────────────────────────────────────────────────
     _TOOL_BACKGROUND = {
@@ -183,27 +147,6 @@ class ClaudeClient:
     def __init__(self, api_key: str, model: str):
         self._client = anthropic.AsyncAnthropic(api_key=api_key)
         self._model = model
-
-    # ── 舊版（保留相容性）──────────────────────────────────────────────────
-    async def generate_project_story(
-        self, project_title: str, notes: list[dict]
-    ) -> dict:
-        notes_text = self._format_notes(notes)
-        response = await self._client.messages.create(
-            model=self._model,
-            max_tokens=1024,
-            tools=[self._TOOL_PROJECT_STORY],
-            tool_choice={"type": "tool", "name": "generate_project_story"},
-            messages=[{
-                "role": "user",
-                "content": (
-                    f"請根據以下關於「{project_title}」的開發筆記，"
-                    f"產生適合求職使用的履歷描述與面試素材。\n\n"
-                    f"開發筆記：\n{notes_text}"
-                ),
-            }],
-        )
-        return self._extract_tool_output(response)
 
     # ── 個人背景介紹 ────────────────────────────────────────────────────────
     async def generate_background(self, notes: list[dict]) -> dict:

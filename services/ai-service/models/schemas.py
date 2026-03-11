@@ -1,20 +1,6 @@
 from pydantic import BaseModel
 
 
-# ── 舊版（保留相容性）────────────────────────────────────────────────────────
-
-class ProjectStoryRequest(BaseModel):
-    project_title: str
-
-
-class ProjectStoryResponse(BaseModel):
-    project_title: str
-    resume_description: str
-    tech_keywords: list[str]
-    interview_story: str
-    source_notes_count: int
-
-
 # ── 個人背景介紹（履歷類別）──────────────────────────────────────────────────
 
 class BackgroundResponse(BaseModel):

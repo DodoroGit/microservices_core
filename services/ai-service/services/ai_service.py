@@ -3,7 +3,6 @@ from typing import Protocol
 from models.schemas import (
     BackgroundResponse,
     DailyResponse,
-    ProjectStoryResponse,
     ProjectSummary,
     ProjectsOverviewResponse,
     SkillsResponse,
@@ -13,7 +12,6 @@ from repositories.note_client import NoteClientProtocol
 
 
 class AIServiceProtocol(Protocol):
-    async def generate_project_story(self, project_title: str) -> ProjectStoryResponse: ...
     async def generate_background(self) -> BackgroundResponse: ...
     async def generate_projects_overview(self) -> ProjectsOverviewResponse: ...
     async def generate_skills(self) -> SkillsResponse: ...
@@ -28,20 +26,6 @@ class AIService:
     ):
         self._note_client = note_client
         self._claude_client = claude_client
-
-    # ── 舊版（保留相容性）──────────────────────────────────────────────────
-    async def generate_project_story(self, project_title: str) -> ProjectStoryResponse:
-        notes = await self._note_client.get_project_notes(project_title)
-        if not notes:
-            raise ValueError(f"找不到與「{project_title}」相關的專案筆記")
-        result = await self._claude_client.generate_project_story(project_title, notes)
-        return ProjectStoryResponse(
-            project_title=project_title,
-            resume_description=result["resume_description"],
-            tech_keywords=result["tech_keywords"],
-            interview_story=result["interview_story"],
-            source_notes_count=len(notes),
-        )
 
     # ── 個人背景介紹 ────────────────────────────────────────────────────────
     async def generate_background(self) -> BackgroundResponse:

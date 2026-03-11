@@ -6,7 +6,6 @@ const SERVICES = [
   { name: 'User Service',  status: 'online' },
   { name: 'Note Service',  status: 'online' },
   { name: 'AI Service',    status: 'online' },
-  { name: 'Ollama LLM',    status: 'online' },
 ]
 
 const STACK = [
@@ -14,7 +13,7 @@ const STACK = [
   { label: '前端',   chips: ['React', 'Vite', 'Nginx'] },
   { label: '資料庫', chips: ['PostgreSQL', 'MongoDB', 'Redis'] },
   { label: '基礎設施', chips: ['Docker', 'Docker Compose'] },
-  { label: 'AI',    chips: ['Ollama', 'Llama 3.2'] },
+  { label: 'AI',    chips: ['Claude API'] },
   { label: '認證',   chips: ['JWT', 'RBAC'] },
   { label: '測試',   chips: ['Unit Test', 'Integration Test'] },
 ]
@@ -100,7 +99,7 @@ function Home({ user }) {
               <span>🤖</span>
             </div>
             <h3>AI Lab</h3>
-            <p>整合本地 Ollama 模型，在自己的 server 上跑 LLM，完全掌控資料。</p>
+            <p>串接 Claude API，從筆記自動生成個人背景、專案介紹、技術能力等履歷素材。</p>
             <div className="feature-tag">上線中</div>
           </div>
         </div>

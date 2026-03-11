@@ -18,7 +18,7 @@ API Gateway (Go / Gin)
 Backend Services
     ├── user-service   (Go + Gin)          → PostgreSQL
     ├── note-service   (Python + FastAPI)  → MongoDB
-    └── ai-service     (Python + FastAPI)  → Redis + Ollama
+    └── ai-service     (Python + FastAPI)  → note-service + Claude API
 ```
 
 | 組件 | 技術 | 說明 |
@@ -27,7 +27,7 @@ Backend Services
 | API Gateway | Go + Gin | 統一入口，JWT 驗證、CORS、RBAC 權限控制 |
 | user-service | Go + Gin + PostgreSQL | 使用者管理，Admin / User 角色 |
 | note-service | Python + FastAPI + MongoDB | 筆記 CRUD，依分類（專案 / 技術筆記 / 日常隨筆）篩選 |
-| ai-service | Python + FastAPI + Redis | 串接 Ollama 本地 LLM，對話歷史存於 Redis |
+| ai-service | Python + FastAPI + Anthropic SDK | 串接 Claude API，從筆記生成個人背景、專案介紹、技術能力等履歷素材 |
 
 ---
 
@@ -125,7 +125,7 @@ note-service / ai-service 的 Pipeline 設有 `paths` 過濾，只有對應目�
 | 前端 | React、Vite、Nginx |
 | 資料庫 | PostgreSQL、MongoDB、Redis |
 | 基礎設施 | Docker、Docker Compose |
-| AI | Ollama、Llama 3.2 |
+| AI | Claude API（Anthropic）|
 | 認證 | JWT、RBAC |
 | 測試 | Unit Test、Integration Test |
 | Lint | golangci-lint（Go）、ruff（Python）|

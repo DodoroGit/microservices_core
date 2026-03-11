@@ -3,8 +3,6 @@ from fastapi import APIRouter, Depends, HTTPException
 from models.schemas import (
     BackgroundResponse,
     DailyResponse,
-    ProjectStoryRequest,
-    ProjectStoryResponse,
     ProjectsOverviewResponse,
     SkillsResponse,
 )
@@ -45,14 +43,3 @@ async def daily(svc: AIServiceProtocol = Depends(get_ai_service)):
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
 
-
-# ── 舊版（保留相容性）──────────────────────────────────────────────────────
-@router.post("/project-story", response_model=ProjectStoryResponse)
-async def project_story(
-    req: ProjectStoryRequest,
-    svc: AIServiceProtocol = Depends(get_ai_service),
-):
-    try:
-        return await svc.generate_project_story(req.project_title)
-    except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
