@@ -17,7 +17,7 @@ API Gateway (Go / Gin)
     ↓ RESTful
 Backend Services
     ├── user-service   (Go + Gin)          → PostgreSQL
-    ├── note-service   (Python + FastAPI)  → MongoDB
+    ├── note-service   (Go + Gin)          → MongoDB
     └── ai-service     (Python + FastAPI)  → note-service + Claude API
 ```
 
@@ -26,7 +26,7 @@ Backend Services
 | Frontend | React + Vite + Nginx | Login / Register / Dashboard / AI Lab / Notes |
 | API Gateway | Go + Gin | 統一入口，JWT 驗證、CORS、RBAC 權限控制 |
 | user-service | Go + Gin + PostgreSQL | 使用者管理，Admin / User 角色 |
-| note-service | Python + FastAPI + MongoDB | 筆記 CRUD，依分類（專案 / 技術筆記 / 日常隨筆）篩選 |
+| note-service | Go + Gin + MongoDB | 筆記 CRUD，依分類（專案 / 技術筆記 / 日常隨筆 / 履歷）篩選 |
 | ai-service | Python + FastAPI + Anthropic SDK | 串接 Claude API，從筆記生成個人背景、專案介紹、技術能力等履歷素材 |
 
 ---
@@ -37,23 +37,23 @@ Backend Services
 
 三個後端服務皆實踐相同的分層架構，各層依賴抽象而非具體實作。
 
-**Go（user-service）**
+**Go（user-service / note-service）**
 
 ```
-Handler  →  UserServiceInterface（interface）
-Service  →  UserRepositoryInterface（interface）
-Repository  →  PostgreSQL
+Handler  →  {User/Note}ServiceInterface（interface）
+Service  →  {User/Note}RepositoryInterface（interface）
+Repository  →  PostgreSQL / MongoDB
 ```
 
 - Go 的 `interface` 為結構化型別，不需要明確宣告實作
 - `main.go` 負責組裝整條依賴鏈（Repository → Service → Handler → Router）
 
-**Python（note-service / ai-service）**
+**Python（ai-service）**
 
 ```
-Router  →  NoteServiceProtocol（Protocol）
-Service →  NoteRepositoryProtocol（Protocol）
-Repository  →  MongoDB / Redis
+Router  →  ServiceProtocol（Protocol）
+Service →  RepositoryProtocol（Protocol）
+Repository  →  note-service（HTTP）+ Claude API
 ```
 
 - Python 以 `typing.Protocol` 作為 interface 的等價物，同樣為結構化型別
@@ -98,7 +98,7 @@ GitHub Actions 三條 Pipeline，各自對應一個服務：
 | Pipeline | Lint | Unit Test | Integration Test |
 |---|---|---|---|
 | user-service | golangci-lint | ✓ | PostgreSQL container |
-| note-service | ruff | ✓ | MongoDB container |
+| note-service | golangci-lint | ✓ | MongoDB container |
 | ai-service | ruff | ✓ | Redis container |
 
 執行順序：`lint → unit-test → integration-test`（前一階段失敗則停止）
@@ -113,7 +113,7 @@ note-service / ai-service 的 Pipeline 設有 `paths` 過濾，只有對應目�
 |---|---|---|
 | Frontend → API Gateway | RESTful | RESTful |
 | API Gateway → Backend Services | RESTful | gRPC |
-| Service → Service | - | gRPC |
+| Service → Service | RESTful | gRPC |
 
 ---
 
@@ -137,7 +137,7 @@ note-service / ai-service 的 Pipeline 設有 `paths` 過濾，只有對應目�
 
 **已完成**
 - [x] user-service — Layered Architecture + Interface + DI + Unit / Integration Test
-- [x] note-service — Layered Architecture + Protocol + DI + Unit / Integration Test
+- [x] note-service — Layered Architecture + Interface + DI + Unit / Integration Test
 - [x] ai-service — Layered Architecture + Protocol + DI + Unit / Integration Test
 - [x] API Gateway — HTTP reverse proxy + JWT 驗證 + CORS + RBAC
 - [x] 前端介面 — Login / Register / Dashboard / AI Lab / Notes
