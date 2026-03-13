@@ -7,8 +7,8 @@ from models.schemas import (
     ProjectsOverviewResponse,
     SkillsResponse,
 )
-from repositories.claude_client import ClaudeClientProtocol
-from repositories.note_client import NoteClientProtocol
+from clients.claude_client import ClaudeClientProtocol
+from clients.note_client import NoteClientProtocol
 
 
 class AIServiceProtocol(Protocol):

@@ -1,13 +1,21 @@
 from fastapi import APIRouter, Depends, HTTPException
 
+from clients.claude_client import ClaudeClient
+from clients.note_client import NoteClient
+from config import settings
 from models.schemas import (
     BackgroundResponse,
     DailyResponse,
     ProjectsOverviewResponse,
     SkillsResponse,
 )
-from routers.dependencies import get_ai_service
-from services.ai_service import AIServiceProtocol
+from services.ai_service import AIService, AIServiceProtocol
+
+
+def get_ai_service() -> AIServiceProtocol:
+    note_client = NoteClient(settings.note_service_url)
+    claude_client = ClaudeClient(settings.anthropic_api_key, settings.claude_model)
+    return AIService(note_client, claude_client)
 
 router = APIRouter(prefix="/ai", tags=["ai"])
 
