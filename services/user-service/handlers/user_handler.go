@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -151,6 +152,39 @@ func (h *UserHandler) UpdateRole(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Role updated successfully"})
+}
+
+// Logout 登出：解析 token 取得剩餘有效時間，交由 service 寫入黑名單
+func (h *UserHandler) Logout(c *gin.Context) {
+	authHeader := c.GetHeader("Authorization")
+	parts := strings.SplitN(authHeader, " ", 2)
+	if len(parts) != 2 {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "缺少 token"})
+		return
+	}
+	tokenString := parts[1]
+
+	claims := &Claims{}
+	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
+		return []byte(h.jwtSecret), nil
+	})
+	if err != nil || !token.Valid {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "無效的 token"})
+		return
+	}
+
+	remaining := time.Until(claims.ExpiresAt.Time)
+	if remaining <= 0 {
+		c.JSON(http.StatusOK, gin.H{"message": "登出成功"})
+		return
+	}
+
+	if err := h.service.Logout(tokenString, remaining); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "登出成功"})
 }
 
 // Health 健康檢查

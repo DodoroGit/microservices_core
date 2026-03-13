@@ -3,6 +3,7 @@ package services
 import (
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -56,6 +57,11 @@ func (m *MockUserRepository) UpdateRole(id string, role string) error {
 
 func (m *MockUserRepository) Delete(id string) error {
 	args := m.Called(id)
+	return args.Error(0)
+}
+
+func (m *MockUserRepository) AddToBlacklist(token string, ttl time.Duration) error {
+	args := m.Called(token, ttl)
 	return args.Error(0)
 }
 

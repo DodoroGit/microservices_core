@@ -4,8 +4,8 @@ import { NavLink, useNavigate } from 'react-router-dom'
 function Sidebar({ user, onLogout }) {
   const navigate = useNavigate()
 
-  const handleLogout = () => {
-    onLogout()
+  const handleLogout = async () => {
+    await onLogout()
     navigate('/')
   }
 

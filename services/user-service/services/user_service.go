@@ -2,6 +2,7 @@ package services
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
@@ -13,6 +14,7 @@ import (
 type UserServiceInterface interface {
 	Register(req models.RegisterRequest) (*models.User, error)
 	Login(req models.LoginRequest) (*models.User, error)
+	Logout(tokenString string, ttl time.Duration) error
 	GetUsers() ([]models.User, error)
 	GetUserByID(id string) (*models.User, error)
 	UpdateUser(id string, req models.UpdateUserRequest) error
@@ -81,6 +83,11 @@ func (s *UserService) Login(req models.LoginRequest) (*models.User, error) {
 	}
 
 	return user, nil
+}
+
+// Logout 將 token 加入黑名單，TTL 由 handler 層計算後傳入
+func (s *UserService) Logout(tokenString string, ttl time.Duration) error {
+	return s.repo.AddToBlacklist(tokenString, ttl)
 }
 
 // GetUsers 獲取所有用戶

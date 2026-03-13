@@ -4,11 +4,13 @@ import "os"
 
 // Config 儲存 API Gateway 所有執行時的設定。
 type Config struct {
-	Port            string
-	JWTSecret       string
-	UserServiceURL  string
-	AIServiceURL    string
-	NoteServiceURL  string
+	Port           string
+	JWTSecret      string
+	UserServiceURL string
+	AIServiceURL   string
+	NoteServiceURL string
+	RedisHost      string
+	RedisPort      string
 }
 
 // Load 從環境變數讀取設定，若未設定則使用預設值。
@@ -19,6 +21,8 @@ func Load() *Config {
 		UserServiceURL: getEnv("USER_SERVICE_URL", "http://localhost:8081"),
 		AIServiceURL:   getEnv("AI_SERVICE_URL", "http://localhost:8082"),
 		NoteServiceURL: getEnv("NOTE_SERVICE_URL", "http://localhost:8083"),
+		RedisHost:      getEnv("REDIS_HOST", "localhost"),
+		RedisPort:      getEnv("REDIS_PORT", "6379"),
 	}
 }
 

@@ -18,6 +18,18 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('user');
+      localStorage.removeItem('token');
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
+  }
+);
+
 export const aiAPI = {
   generateBackground: () => api.post('/api/ai/background'),
   generateProjects: () => api.post('/api/ai/projects'),
@@ -37,6 +49,7 @@ export const noteAPI = {
 export const userAPI = {
   register: (userData) => api.post('/api/users/register', userData),
   login: (credentials) => api.post('/api/users/login', credentials),
+  logout: () => api.post('/api/users/logout'),
   getUsers: () => api.get('/api/users'),
   getUser: (id) => api.get(`/api/users/${id}`),
   updateUser: (id, userData) => api.put(`/api/users/${id}`, userData),

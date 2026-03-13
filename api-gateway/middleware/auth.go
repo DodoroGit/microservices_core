@@ -1,12 +1,14 @@
 package middleware
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/redis/go-redis/v9"
 )
 
 // Claims 定義從 JWT payload 中讀取的欄位，需與 user-service 簽發時的結構相同
@@ -25,7 +27,7 @@ type Claims struct {
 //  3. 用 JWT_SECRET 驗證簽章是否正確
 //  4. 確認 token 尚未過期（jwt 套件自動處理）
 //  5. 將 user_id 存入 gin.Context，讓後續 handler 可以使用
-func RequireAuth(jwtSecret string) gin.HandlerFunc {
+func RequireAuth(jwtSecret string, redisClient *redis.Client) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// ── 1. 取出 header ─────────────────────────────────────────────────
 		authHeader := c.GetHeader("Authorization")
@@ -62,7 +64,16 @@ func RequireAuth(jwtSecret string) gin.HandlerFunc {
 			return
 		}
 
-		// ── 4. 將 user_id 存入 context，後續 handler 可透過 c.GetString("user_id") 取得
+		// ── 4. 檢查 token 是否在黑名單（已登出）────────────────────────────
+		val, err := redisClient.Get(context.Background(), "blacklist:"+tokenString).Result()
+		if err == nil && val == "1" {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+				"error": "token 已被撤銷，請重新登入",
+			})
+			return
+		}
+
+		// ── 5. 將 user_id 存入 context，後續 handler 可透過 c.GetString("user_id") 取得
 		c.Set("user_id", claims.UserID)
 		c.Set("email", claims.Email)
 		c.Set("role", claims.Role)

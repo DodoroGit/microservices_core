@@ -177,12 +177,19 @@ services:
       - USER_SERVICE_URL=http://user-service:8081
       - AI_SERVICE_URL=http://ai-service:8082
       - NOTE_SERVICE_URL=http://note-service:8083
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
     ports:
       - "8080:8080"
     depends_on:
-      - user-service
-      - ai-service
-      - note-service
+      redis:
+        condition: service_healthy
+      user-service:
+        condition: service_started
+      ai-service:
+        condition: service_started
+      note-service:
+        condition: service_started
     networks:
       - microservices_network
     restart: unless-stopped

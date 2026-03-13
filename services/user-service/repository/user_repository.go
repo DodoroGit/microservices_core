@@ -1,9 +1,12 @@
 package repository
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
+	"time"
 
+	"github.com/redis/go-redis/v9"
 	"user-service/models"
 )
 
@@ -16,16 +19,18 @@ type UserRepositoryInterface interface {
 	Update(id string, username string) error
 	UpdateRole(id string, role string) error
 	Delete(id string) error
+	AddToBlacklist(token string, ttl time.Duration) error
 }
 
-// UserRepository 用戶資料訪問層
+// UserRepository 用戶資料訪問層，同時持有 DB 與 Redis
 type UserRepository struct {
-	db *sql.DB
+	db    *sql.DB
+	redis *redis.Client
 }
 
 // NewUserRepository 創建用戶 Repository
-func NewUserRepository(db *sql.DB) *UserRepository {
-	return &UserRepository{db: db}
+func NewUserRepository(db *sql.DB, redis *redis.Client) *UserRepository {
+	return &UserRepository{db: db, redis: redis}
 }
 
 // Create 創建用戶
@@ -160,4 +165,9 @@ func (r *UserRepository) Delete(id string) error {
 	}
 
 	return nil
+}
+
+// AddToBlacklist 將 token 加入黑名單，TTL 到期後 Redis 自動清除
+func (r *UserRepository) AddToBlacklist(token string, ttl time.Duration) error {
+	return r.redis.Set(context.Background(), "blacklist:"+token, "1", ttl).Err()
 }

@@ -11,12 +11,13 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/redis/go-redis/v9"
 )
 
 const aiTimeout = 120 * time.Second
 
 // Setup 將所有 middleware 與路由掛載到 Gin engine 上。
-func Setup(r *gin.Engine, cfg *config.Config) {
+func Setup(r *gin.Engine, cfg *config.Config, redisClient *redis.Client) {
 	p := proxy.New()
 	aiProxy := proxy.NewWithTimeout(aiTimeout)
 
@@ -55,8 +56,9 @@ func Setup(r *gin.Engine, cfg *config.Config) {
 
 	// 受保護路由：需要帶 Bearer token（透過 middleware/auth.go 驗證）
 	protected := r.Group("/api")
-	protected.Use(middleware.RequireAuth(cfg.JWTSecret))
+	protected.Use(middleware.RequireAuth(cfg.JWTSecret, redisClient))
 	{
+		protected.POST("/users/logout", p.Forward(cfg.UserServiceURL, "/api"))
 		protected.GET("/users", p.Forward(cfg.UserServiceURL, "/api"))
 		protected.GET("/users/:id", p.Forward(cfg.UserServiceURL, "/api"))
 		protected.PUT("/users/:id", p.Forward(cfg.UserServiceURL, "/api"))
@@ -65,7 +67,7 @@ func Setup(r *gin.Engine, cfg *config.Config) {
 
 	// AI Service 路由：需要登入，120 秒 timeout（LLM 推理較慢）
 	ai := r.Group("/api/ai")
-	ai.Use(middleware.RequireAuth(cfg.JWTSecret))
+	ai.Use(middleware.RequireAuth(cfg.JWTSecret, redisClient))
 	{
 		ai.POST("/background", aiProxy.Forward(cfg.AIServiceURL, "/api"))
 		ai.POST("/projects", aiProxy.Forward(cfg.AIServiceURL, "/api"))
@@ -76,7 +78,7 @@ func Setup(r *gin.Engine, cfg *config.Config) {
 
 	// Note Service 路由 - 所有登入用戶可讀
 	notes := r.Group("/api")
-	notes.Use(middleware.RequireAuth(cfg.JWTSecret))
+	notes.Use(middleware.RequireAuth(cfg.JWTSecret, redisClient))
 	{
 		notes.GET("/notes", p.Forward(cfg.NoteServiceURL, "/api"))
 		notes.GET("/notes/:id", p.Forward(cfg.NoteServiceURL, "/api"))
@@ -84,7 +86,7 @@ func Setup(r *gin.Engine, cfg *config.Config) {
 
 	// Admin-only 路由：需要 admin 角色
 	admin := r.Group("/api")
-	admin.Use(middleware.RequireAuth(cfg.JWTSecret))
+	admin.Use(middleware.RequireAuth(cfg.JWTSecret, redisClient))
 	admin.Use(middleware.RequireAdmin())
 	{
 		admin.PATCH("/users/:id/role", p.Forward(cfg.UserServiceURL, "/api"))

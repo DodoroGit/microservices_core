@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
@@ -65,6 +66,11 @@ func (m *MockUserService) UpdateRole(id string, role string) error {
 
 func (m *MockUserService) DeleteUser(id string) error {
 	args := m.Called(id)
+	return args.Error(0)
+}
+
+func (m *MockUserService) Logout(tokenString string, ttl time.Duration) error {
+	args := m.Called(tokenString, ttl)
 	return args.Error(0)
 }
 

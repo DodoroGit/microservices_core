@@ -3,14 +3,17 @@
 package repository
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"os"
 	"testing"
+	"time"
 
 	"user-service/models"
 
 	_ "github.com/lib/pq"
+	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -68,6 +71,17 @@ func setupIntegrationDB(t *testing.T) *sql.DB {
 	return db
 }
 
+func setupIntegrationRedis(t *testing.T) *redis.Client {
+	t.Helper()
+
+	addr := getEnvOrDefault("REDIS_ADDR", "localhost:6379")
+	client := redis.NewClient(&redis.Options{Addr: addr})
+	require.NoError(t, client.Ping(context.Background()).Err(), "failed to ping redis — is redis running?")
+
+	t.Cleanup(func() { client.Close() })
+	return client
+}
+
 func getEnvOrDefault(key, defaultValue string) string {
 	if v := os.Getenv(key); v != "" {
 		return v
@@ -82,7 +96,8 @@ func getEnvOrDefault(key, defaultValue string) string {
 func TestUserRepository_Create(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		db := setupIntegrationDB(t)
-		repo := NewUserRepository(db)
+		redisClient := setupIntegrationRedis(t)
+		repo := NewUserRepository(db, redisClient)
 
 		user := &models.User{
 			ID:       "11111111-1111-1111-1111-111111111111",
@@ -101,7 +116,8 @@ func TestUserRepository_Create(t *testing.T) {
 
 	t.Run("duplicate email", func(t *testing.T) {
 		db := setupIntegrationDB(t)
-		repo := NewUserRepository(db)
+		redisClient := setupIntegrationRedis(t)
+		repo := NewUserRepository(db, redisClient)
 
 		// 先建第一筆
 		first := &models.User{
@@ -133,7 +149,8 @@ func TestUserRepository_Create(t *testing.T) {
 func TestUserRepository_FindByEmail(t *testing.T) {
 	t.Run("found", func(t *testing.T) {
 		db := setupIntegrationDB(t)
-		repo := NewUserRepository(db)
+		redisClient := setupIntegrationRedis(t)
+		repo := NewUserRepository(db, redisClient)
 
 		// 先建一筆資料供查詢用
 		existing := &models.User{
@@ -155,7 +172,8 @@ func TestUserRepository_FindByEmail(t *testing.T) {
 
 	t.Run("not found", func(t *testing.T) {
 		db := setupIntegrationDB(t)
-		repo := NewUserRepository(db)
+		redisClient := setupIntegrationRedis(t)
+		repo := NewUserRepository(db, redisClient)
 
 		user, err := repo.FindByEmail("nobody@integration.test")
 
@@ -171,7 +189,8 @@ func TestUserRepository_FindByEmail(t *testing.T) {
 func TestUserRepository_FindByID(t *testing.T) {
 	t.Run("found", func(t *testing.T) {
 		db := setupIntegrationDB(t)
-		repo := NewUserRepository(db)
+		redisClient := setupIntegrationRedis(t)
+		repo := NewUserRepository(db, redisClient)
 
 		existing := &models.User{
 			ID:       "44444444-4444-4444-4444-444444444444",
@@ -190,7 +209,8 @@ func TestUserRepository_FindByID(t *testing.T) {
 
 	t.Run("not found", func(t *testing.T) {
 		db := setupIntegrationDB(t)
-		repo := NewUserRepository(db)
+		redisClient := setupIntegrationRedis(t)
+		repo := NewUserRepository(db, redisClient)
 
 		user, err := repo.FindByID("00000000-0000-0000-0000-000000000000")
 
@@ -206,7 +226,8 @@ func TestUserRepository_FindByID(t *testing.T) {
 func TestUserRepository_Update(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		db := setupIntegrationDB(t)
-		repo := NewUserRepository(db)
+		redisClient := setupIntegrationRedis(t)
+		repo := NewUserRepository(db, redisClient)
 
 		existing := &models.User{
 			ID:       "55555555-5555-5555-5555-555555555555",
@@ -226,7 +247,8 @@ func TestUserRepository_Update(t *testing.T) {
 
 	t.Run("user not found", func(t *testing.T) {
 		db := setupIntegrationDB(t)
-		repo := NewUserRepository(db)
+		redisClient := setupIntegrationRedis(t)
+		repo := NewUserRepository(db, redisClient)
 
 		err := repo.Update("00000000-0000-0000-0000-000000000000", "newname")
 
@@ -241,7 +263,8 @@ func TestUserRepository_Update(t *testing.T) {
 func TestUserRepository_Delete(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		db := setupIntegrationDB(t)
-		repo := NewUserRepository(db)
+		redisClient := setupIntegrationRedis(t)
+		repo := NewUserRepository(db, redisClient)
 
 		existing := &models.User{
 			ID:       "66666666-6666-6666-6666-666666666666",
@@ -261,7 +284,8 @@ func TestUserRepository_Delete(t *testing.T) {
 
 	t.Run("already deleted", func(t *testing.T) {
 		db := setupIntegrationDB(t)
-		repo := NewUserRepository(db)
+		redisClient := setupIntegrationRedis(t)
+		repo := NewUserRepository(db, redisClient)
 
 		existing := &models.User{
 			ID:       "66666666-6666-6666-6666-666666666666",
@@ -281,10 +305,53 @@ func TestUserRepository_Delete(t *testing.T) {
 
 	t.Run("not found", func(t *testing.T) {
 		db := setupIntegrationDB(t)
-		repo := NewUserRepository(db)
+		redisClient := setupIntegrationRedis(t)
+		repo := NewUserRepository(db, redisClient)
 
 		err := repo.Delete("00000000-0000-0000-0000-000000000000")
 
 		assert.Error(t, err)
+	})
+}
+
+// ===================================================================
+// AddToBlacklist 測試
+// ===================================================================
+
+func TestUserRepository_AddToBlacklist(t *testing.T) {
+	t.Run("success", func(t *testing.T) {
+		db := setupIntegrationDB(t)
+		redisClient := setupIntegrationRedis(t)
+		repo := NewUserRepository(db, redisClient)
+
+		token := "test.jwt.token"
+		ttl := 5 * time.Minute
+
+		err := repo.AddToBlacklist(token, ttl)
+
+		assert.NoError(t, err)
+		// 確認 key 真的寫進 Redis
+		val, redisErr := redisClient.Get(context.Background(), "blacklist:"+token).Result()
+		assert.NoError(t, redisErr)
+		assert.Equal(t, "1", val)
+	})
+
+	t.Run("expired token is auto removed", func(t *testing.T) {
+		db := setupIntegrationDB(t)
+		redisClient := setupIntegrationRedis(t)
+		repo := NewUserRepository(db, redisClient)
+
+		token := "expiring.jwt.token"
+
+		// 寫入極短 TTL
+		err := repo.AddToBlacklist(token, 1*time.Millisecond)
+		require.NoError(t, err)
+
+		// 等 TTL 過期
+		time.Sleep(50 * time.Millisecond)
+
+		// Redis 應該已自動清掉
+		_, redisErr := redisClient.Get(context.Background(), "blacklist:"+token).Result()
+		assert.ErrorIs(t, redisErr, redis.Nil)
 	})
 }

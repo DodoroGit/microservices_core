@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import './App.css'
+import { userAPI } from './api'
 import Sidebar from './components/Sidebar.jsx'
 import Home from './components/Home.jsx'
 import Login from './components/Login.jsx'
@@ -24,11 +25,17 @@ function App() {
     }
   }, [])
 
-  const handleLogout = () => {
-    localStorage.removeItem('user')
-    localStorage.removeItem('token')
-    setUser(null)
-  }
+  const handleLogout = useCallback(async () => {
+    try {
+      await userAPI.logout()
+    } catch {
+      // API 失敗仍清除本地狀態
+    } finally {
+      localStorage.removeItem('user')
+      localStorage.removeItem('token')
+      setUser(null)
+    }
+  }, [])
 
   return (
     <Router>

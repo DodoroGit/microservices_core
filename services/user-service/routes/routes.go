@@ -13,6 +13,7 @@ func SetupRoutes(router *gin.Engine, userHandler *handlers.UserHandler) {
 	// 用戶路由
 	router.POST("/users/register", userHandler.Register)
 	router.POST("/users/login", userHandler.Login)
+	router.POST("/users/logout", userHandler.Logout)
 	router.GET("/users", userHandler.GetUsers)
 	router.GET("/users/:id", userHandler.GetUser)
 	router.PUT("/users/:id", userHandler.UpdateUser)

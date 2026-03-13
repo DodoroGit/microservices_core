@@ -33,7 +33,7 @@ func main() {
 	defer redisClient.Close()
 
 	// 初始化各層
-	userRepo := repository.NewUserRepository(db)
+	userRepo := repository.NewUserRepository(db, redisClient)
 	userService := services.NewUserService(userRepo)
 	userHandler := handlers.NewUserHandler(userService, cfg.JWTSecret)
 
