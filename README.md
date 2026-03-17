@@ -25,7 +25,7 @@ Backend Services
 |---|---|---|
 | Frontend | React + Vite + Nginx | Login / Register / Dashboard / AI Lab / Notes |
 | API Gateway | Go + Gin | 統一入口，JWT 驗證（含黑名單）、CORS、RBAC 權限控制 |
-| user-service | Go + Gin + PostgreSQL | 使用者管理，Admin / User 角色 |
+| user-service | Go + Gin + PostgreSQL + Redis | 使用者管理，Admin / User 角色，JWT 登出黑名單 |
 | note-service | Go + Gin + MongoDB | 筆記 CRUD，依分類（專案 / 技術筆記 / 日常隨筆 / 履歷）篩選 |
 | ai-service | Python + FastAPI + Anthropic SDK | 串接 Claude API，從筆記生成個人背景、專案介紹、技術能力等履歷素材 |
 
